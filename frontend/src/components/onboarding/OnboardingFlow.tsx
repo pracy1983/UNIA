@@ -1,6 +1,13 @@
 import React from 'react';
 
-export default function OnboardingFlow() {
-          return <div>Onboarding</div>div>;
-}
-</div>
+const OnboardingFlow = () => {
+            return (
+                          <div style={{ padding: '20px', textAlign: 'center' }}>
+                                          <h1>Bem-vindo ao UNIA</h1>h1>
+                                <p>Estamos configurando seu ambiente.</p>p>
+                          </div>div>
+                        );
+};
+
+export default OnboardingFlow;
+</h1>

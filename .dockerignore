@@ -1,4 +1,6 @@
 node_modules
-  backups
-  .env
-  
+**/node_modules
+dist
+**/dist
+backups
+.env

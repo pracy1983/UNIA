@@ -1,4 +1,5 @@
 # Multi-stage Dockerfile for UNIA (Easypanel Optimized - Mono-container)
+# Cache bust: 1
 
 # Stage 1: Build Frontend
 FROM node:20-alpine AS frontend-builder
@@ -14,7 +15,8 @@ WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm install
 COPY backend/ ./
-RUN npm run build
+# Fix permissions and use npx to ensure tsc is executable
+RUN npx tsc
 
 # Stage 3: Production
 FROM node:20-alpine

@@ -47,7 +47,6 @@ const LoginPage = () => {
         className="glass-card"
         style={{
           width: '100%',
-          maxSize: '400px',
           maxWidth: '400px',
           padding: '40px',
           position: 'relative',

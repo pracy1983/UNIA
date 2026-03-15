@@ -2,15 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import pool, { query } from './config/database.js';
+import { query } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import onboardingRoutes from './routes/onboardingRoutes.js';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Fixes for ESM/CommonJS compatibility in production
+// @ts-ignore
+const __dirname = path.resolve();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,24 +24,24 @@ app.use('/api/onboarding', onboardingRoutes);
 
 // Healthcheck
 app.get('/health', async (req, res) => {
-  try {
-    await query('SELECT 1');
-    res.status(200).json({ status: 'OK', database: 'connected' });
-  } catch (err) {
-    res.status(500).json({ status: 'ERROR', database: 'disconnected' });
-  }
+    try {
+          await query('SELECT 1');
+          res.status(200).json({ status: 'OK', database: 'connected' });
+    } catch (error) {
+          res.status(500).json({ status: 'Error', database: 'disconnected' });
+    }
 });
 
-// Serve Static Files (Production)
-// Adjusting path to point to frontend/dist (which will be copied to backend/dist/public in Dockerflow)
-const publicPath = path.join(__dirname, 'public');
-app.use(express.static(publicPath));
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+    const publicPath = path.join(__dirname, 'dist', 'public');
+    app.use(express.static(publicPath));
 
-// Handle React Routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(publicPath, 'index.html'));
-});
+  app.get('*', (req, res) => {
+        res.sendFile(path.join(publicPath, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });

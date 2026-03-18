@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,9 +26,7 @@ const LoginPage = () => {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      // Redirect or update state (handled by parent context usually)
-      window.location.reload(); 
-    } catch (err: any) {
+      navigate('/dashboard');    } catch (err: any) {
       setError(err.response?.data?.message || 'Algo deu errado. Tente novamente.');
     } finally {
       setLoading(false);

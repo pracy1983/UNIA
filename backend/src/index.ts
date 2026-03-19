@@ -5,10 +5,10 @@ import path from 'path';
 import { query } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import onboardingRoutes from './routes/onboardingRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 dotenv.config();
 
-// Fixes for ESM/CommonJS compatibility in production
 // @ts-ignore
 const __dirname = path.resolve();
 
@@ -21,6 +21,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Healthcheck
 app.get('/health', async (req, res) => {
@@ -32,7 +33,6 @@ app.get('/health', async (req, res) => {
     }
 });
 
-// Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
     const publicPath = path.join(__dirname, 'dist', 'public');
     app.use(express.static(publicPath));

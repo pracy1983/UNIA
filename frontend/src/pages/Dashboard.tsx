@@ -41,9 +41,22 @@ const Sidebar = () => (
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{"displayName": "Jay"}');
+  
+  const getUserData = () => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+        return JSON.parse(storedUser);
+      }
+    } catch (e) {
+      console.error('Error parsing user data:', e);
+    }
+    return { displayName: 'Usuário' };
+  };
 
-  // These are the names from the provided image mockup
+  const user = getUserData();
+  const firstName = (user?.displayName || 'Usuário').split(' ')[0] || 'Usuário';
+
   const relationships = [
     { name: 'Dateina Fanna', type: 'Relacionamento', level: '21%', percentage: 80 },
     { name: 'Adria Ranar', type: 'Relationships', level: '31%', percentage: 85, color: '#fca5a5' },
@@ -56,9 +69,9 @@ const Dashboard = () => {
       <Sidebar />
 
       <main className="main-layout">
-        {/* Left Column: Feed & Search Feed & Search */}
+        {/* Left Column: Feed & Search */}
         <section className="flex flex-col gap-10">
-          {/* Top Bar Top Bar */}
+          {/* Top Bar */}
           <div className="flex items-center justify-between gap-8">
             <div className="flex-1 max-w-[500px] glass flex items-center gap-4 px-6 py-4 rounded-2xl border border-white/5 bg-white/5">
               <SearchIcon size={20} className="text-white/30" />
@@ -77,7 +90,10 @@ const Dashboard = () => {
                 navigate('/login');
               }}
             >
-              <span className="text-white/80 font-medium">Bom dia, <span className="text-white font-bold">{user.displayName.split(' ')[0]}!</span></span>
+              <div className="text-right">
+                <p className="text-white/80 font-medium text-sm">Bom dia,</p>
+                <p className="text-white font-bold">{firstName}!</p>
+              </div>
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-white/30 transition-all">
                 <img src="https://i.pravatar.cc/150?u=jay" alt="Profile" className="w-full h-full object-cover" />
               </div>
@@ -95,7 +111,7 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {/* Right Column: Widgets Widgets */}
+        {/* Right Column: Widgets */}
         <aside className="flex flex-col gap-12 pt-24 sticky top-0">
           <PillWidget />
           <AlertWidget />

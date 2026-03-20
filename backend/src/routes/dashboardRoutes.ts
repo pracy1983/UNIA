@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { getActiveRelationships } from '../controllers/dashboardController.js';
-// import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { authMiddleware } from '../middlewares/auth.js';
 
 const router = Router();
 
-// Prepared for token authentication
-// router.get('/relationships', authenticateToken, getActiveRelationships);
-router.get('/relationships', getActiveRelationships);
+// Protected route with authentication
+router.get('/relationships', authMiddleware, getActiveRelationships);
 
 export default router;

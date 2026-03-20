@@ -2,22 +2,37 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface RelationshipCardProps {
-  name: string;
-  level: string;
+  id: number;
+  title: string;
+  type: string;
+  status: string;
+  level: number;
+  xp: number;
   percentage: number;
   progressValue: number;
   avatars?: string[];
   color?: string;
 }
 
-const RelationshipCard: React.FC<RelationshipCardProps> = ({ 
-  name, 
-  level, 
-  percentage, 
+const RelationshipCard: React.FC<RelationshipCardProps> = ({
+  title,
+  type,
+  level,
+  percentage,
   progressValue,
   avatars = [],
   color = 'linear-gradient(90deg, #FF7E5F, #FEB47B)'
 }) => {
+  // Tradução dos tipos
+  const typeLabels: Record<string, string> = {
+    dating: 'Namoro',
+    marriage: 'Casamento',
+    friendship: 'Amizade',
+    family: 'Família',
+    professional: 'Profissional',
+    other: 'Outro'
+  };
+
   return (
     <motion.div
       className="rel-card"
@@ -38,15 +53,22 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)'
             }}>
-              {name[0]}
+              {title[0]?.toUpperCase() || '?'}
             </div>
           )}
         </div>
-        <span className="rel-card-name">{name}</span>
+        <span className="rel-card-name">{title}</span>
+        <span style={{
+          fontSize: '0.75rem',
+          color: 'rgba(255,255,255,0.5)',
+          marginTop: '4px'
+        }}>
+          {typeLabels[type] || type}
+        </span>
       </div>
 
       <div className="rel-card-meta">
-        <span>{level} - {percentage}%</span>
+        <span>Nível {level} - {percentage}%</span>
         <span>{progressValue}%</span>
       </div>
 

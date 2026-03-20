@@ -7,8 +7,13 @@
 4. **EXECUTE**: Implementar conforme o plano aprovado.
 5. **REVIEW**: Validar cada linha e funcionalidade.
 
-## 🚀 Fluxo de Deploy
-1. Subir Banco de Dados.
-2. Aguardar Healthcheck.
-3. Rodar Migrações.
-4. Subir Backend/Frontend.
+## 🚀 Fluxo de Deploy (OBRIGATÓRIO após toda alteração)
+O Easypanel monitora a branch `main` no GitHub e implanta automaticamente a cada push.
+
+**Sequência SEMPRE executada ao fim de qualquer tarefa:**
+```
+git add -A
+git commit -m "tipo: descrição clara"
+git push origin main
+```
+Aguardar ~2-3 min e verificar: https://unia.vrdncy.easypanel.host/health

@@ -184,7 +184,11 @@ const Dashboard = () => {
               ) : (
                 <div className="relationships-row">
                   {relationships.map((rel, i) => (
-                    <RelationshipCard key={i} {...rel} />
+                    <RelationshipCard
+                      key={i}
+                      {...rel}
+                      onClick={() => navigate(`/relationship/${rel.id}`)}
+                    />
                   ))}
                 </div>
               )}

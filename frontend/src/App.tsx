@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import OnboardingPage from './pages/OnboardingPage';
+import RelationshipDetail from './pages/RelationshipDetail';
 
 // Simple Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -61,6 +62,12 @@ export default function App() {
         <Route path="/onboarding" element={
           <ProtectedRoute>
             <OnboardingPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/relationship/:id" element={
+          <ProtectedRoute>
+            <RelationshipDetail />
           </ProtectedRoute>
         } />
 

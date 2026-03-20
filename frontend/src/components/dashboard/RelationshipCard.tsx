@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface RelationshipCardProps {
-  id: number;
+  id: string;
   type: string;
   status: string;
   level: number;
@@ -11,7 +11,9 @@ interface RelationshipCardProps {
   progressValue: number;
   avatars?: string[];
   color?: string;
+  onClick?: () => void;
 }
+
 
 const RelationshipCard: React.FC<RelationshipCardProps> = ({
   type,
@@ -19,7 +21,8 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({
   percentage,
   progressValue,
   avatars = [],
-  color = 'linear-gradient(90deg, #FF7E5F, #FEB47B)'
+  color = 'linear-gradient(90deg, #FF7E5F, #FEB47B)',
+  onClick,
 }) => {
   // Tradução dos tipos
   const typeLabels: Record<string, string> = {
@@ -39,6 +42,8 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({
       whileHover={{ y: -4 }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
       <div className="rel-card-top">
         <div className="rel-avatars">

@@ -1,19 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { savePill, getLatestPill } from '../../services/api';
 
-// Pílula do Dia: salva a resposta no localStorage
+const MOOD_MAP: Record<string, string> = {
+  Excelente: 'excellent',
+  Normal: 'normal',
+  Melhorável: 'improvable',
+};
+const MOOD_MAP_REVERSE: Record<string, string> = {
+  excellent: 'Excelente',
+  normal: 'Normal',
+  improvable: 'Melhorável',
+};
+
+// Pílula do Dia: estado do usuário — persiste no banco via /api/pills
 export const PillWidget = () => {
-  const [selected, setSelected] = useState<string | null>(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const saved = localStorage.getItem(`pill_${today}`);
-    return saved || null;
-  });
+  const [selected, setSelected] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleSelect = (option: string) => {
+  // Carregar pill de hoje do banco
+  useEffect(() => {
+    getLatestPill()
+      .then((pill) => {
+        if (pill) {
+          const today = new Date().toISOString().split('T')[0];
+          const pillDay = pill.created_at.split('T')[0];
+          if (pillDay === today) {
+            setSelected(MOOD_MAP_REVERSE[pill.mood] || null);
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback: usar localStorage
+        const today = new Date().toISOString().split('T')[0];
+        const saved = localStorage.getItem(`pill_${today}`);
+        if (saved) setSelected(saved);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSelect = async (option: string) => {
     setSelected(option);
+    setSaving(true);
     const today = new Date().toISOString().split('T')[0];
     localStorage.setItem(`pill_${today}`, option);
+    try {
+      await savePill(MOOD_MAP[option], '');
+    } catch {
+      // Silently fail — localStorage backup is set
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -29,26 +68,33 @@ export const PillWidget = () => {
         Como estão seus relacionamentos hoje?
       </p>
 
-      <div className="pill-buttons">
-        {['Excelente', 'Normal', 'Melhorável'].map((option) => (
-          <button
-            key={option}
-            className={`pill-btn${selected === option ? ' selected' : ''}`}
-            onClick={() => handleSelect(option)}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px' }}>
+          <Loader2 size={20} style={{ opacity: 0.4, animation: 'spin 1s linear infinite' }} />
+        </div>
+      ) : (
+        <div className="pill-buttons">
+          {['Excelente', 'Normal', 'Melhorável'].map((option) => (
+            <button
+              key={option}
+              className={`pill-btn${selected === option ? ' selected' : ''}`}
+              onClick={() => handleSelect(option)}
+              disabled={saving}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {selected && (
+      {selected && !loading && (
         <p style={{
           marginTop: '12px',
-          fontSize: '0.85rem',
-          color: 'rgba(255,255,255,0.6)',
+          fontSize: '0.82rem',
+          color: 'rgba(255,255,255,0.5)',
           textAlign: 'center'
         }}>
-          ✓ Resposta salva para hoje
+          {saving ? 'Salvando...' : '✓ Salvo no seu perfil'}
         </p>
       )}
     </motion.div>
@@ -73,14 +119,14 @@ export const AlertWidget = ({ relationshipsCount = 0 }: { relationshipsCount?: n
           <h3>Alerta UNIA: Conexões Ativas!</h3>
           <p>
             Você tem {relationshipsCount} relacionamento{relationshipsCount > 1 ? 's' : ''} ativo{relationshipsCount > 1 ? 's' : ''}.
-            Continue cultivando suas conexões para fortalecer seus laços.
+            Continue cultivando suas conexões.
           </p>
         </>
       ) : (
         <>
           <h3>Alerta UNIA: Previsão de Conexão Profunda!</h3>
           <p>
-            Cadastre seus relacionamentos para receber previsões e alertas personalizados de IA.
+            Cadastre seus relacionamentos para receber alertas personalizados de IA.
           </p>
         </>
       )}

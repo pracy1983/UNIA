@@ -17,6 +17,10 @@ Criar o "Copiloto Definitivo de Relacionamentos" com foco em organização, mem�
 
 ## 🎨 Design & UI (Fase Atual)
 - **Background**: Uso de `bg-desktop.png` e `bg-mobile.jpg`.
-- **Glassmorphism**: Backdrop blur de 20px-30px, bordas translúcidas (8% opacidade).
-- **Logo**: Uso do novo logo `logo.png`.
-- **Layout**: Sidebar fixa, lista vertical de relacionamentos, widgets laterais.
+- **Glassmorphism**: Backdrop blur de 32px, bordas translúcidas (8% opacidade).
+- **Layout**: Sidebar de 230px, grid de relacionamentos horizontal, widgets organizados.
+
+## 🚀 Deployment & Automação
+- **Easypanel**: Deploy automático via branch `main` no GitHub.
+- **Workflow**: `git push origin main` -> Auto build & deploy.
+- **Healthcheck**: Monitorado em `https://unia.vrdncy.easypanel.host/health`.

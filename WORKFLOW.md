@@ -17,3 +17,7 @@ git commit -m "tipo: descrição clara"
 git push origin main
 ```
 Aguardar ~2-3 min e verificar: https://unia.vrdncy.easypanel.host/health
+
+> [!TIP]
+> **Se o deploy não iniciar sozinho:**
+> Vá no Easypanel > `unia-app` > aba **Source** e certifique-se de que o **Auto Deploy** está **ON**. Isso garante que o GitHub avise o Easypanel sobre novos códigos.

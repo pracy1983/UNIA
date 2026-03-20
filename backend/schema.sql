@@ -93,3 +93,16 @@ CREATE TABLE conflict_resolutions (
     action_items JSONB DEFAULT '[]',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Daily Pills Table (Mood tracking)
+CREATE TABLE daily_pills (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mood TEXT NOT NULL, -- excellent, normal, improvable
+    note TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Unique constraint for one pill per user per day
+CREATE UNIQUE INDEX idx_daily_pills_user_day ON daily_pills (user_id, date_trunc('day', created_at));

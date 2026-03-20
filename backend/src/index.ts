@@ -7,6 +7,8 @@ import authRoutes from './routes/authRoutes.js';
 import onboardingRoutes from './routes/onboardingRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import relationshipsRoutes from './routes/relationshipsRoutes.js';
+import pillRoutes from './routes/pillRoutes.js';
+import memoryRoutes from './routes/memoryRoutes.js';
 
 dotenv.config();
 
@@ -24,6 +26,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/relationships', relationshipsRoutes);
+app.use('/api/pills', pillRoutes);
+app.use('/api/memories', memoryRoutes);
 
 // Healthcheck
 app.get('/health', async (req, res) => {

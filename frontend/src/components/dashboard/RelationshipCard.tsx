@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 
 interface RelationshipCardProps {
   id: number;
-  title: string;
   type: string;
   status: string;
   level: number;
@@ -15,7 +14,6 @@ interface RelationshipCardProps {
 }
 
 const RelationshipCard: React.FC<RelationshipCardProps> = ({
-  title,
   type,
   level,
   percentage,
@@ -25,13 +23,15 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({
 }) => {
   // Tradução dos tipos
   const typeLabels: Record<string, string> = {
+    solo: 'Solo',
     dating: 'Namoro',
     marriage: 'Casamento',
-    friendship: 'Amizade',
-    family: 'Família',
-    professional: 'Profissional',
-    other: 'Outro'
+    poly: 'Poliamoroso',
+    open: 'Relacionamento Aberto',
+    friendship: 'Amizade'
   };
+
+  const displayName = typeLabels[type] || type;
 
   return (
     <motion.div
@@ -53,18 +53,11 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)'
             }}>
-              {title[0]?.toUpperCase() || '?'}
+              {displayName[0]?.toUpperCase() || '?'}
             </div>
           )}
         </div>
-        <span className="rel-card-name">{title}</span>
-        <span style={{
-          fontSize: '0.75rem',
-          color: 'rgba(255,255,255,0.5)',
-          marginTop: '4px'
-        }}>
-          {typeLabels[type] || type}
-        </span>
+        <span className="rel-card-name">{displayName}</span>
       </div>
 
       <div className="rel-card-meta">

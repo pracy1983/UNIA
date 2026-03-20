@@ -61,7 +61,6 @@ const Dashboard = () => {
   const [loadingRel, setLoadingRel] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<CreateRelationshipData>({
-    title: '',
     type: 'dating'
   });
   const [creating, setCreating] = useState(false);
@@ -94,7 +93,7 @@ const Dashboard = () => {
     try {
       await createRelationship(formData);
       setShowModal(false);
-      setFormData({ title: '', type: 'dating' });
+      setFormData({ type: 'dating' });
       fetchRelationships();
     } catch (error) {
       console.error('Erro ao criar relacionamento:', error);
@@ -174,7 +173,7 @@ const Dashboard = () => {
                   }}
                 >
                   <Plus size={16} />
-                  Adicionar
+                  Adicionar Relacionamento
                 </button>
               </div>
 
@@ -222,18 +221,6 @@ const Dashboard = () => {
 
             <form onSubmit={handleCreateRelationship}>
               <div className="form-group">
-                <label htmlFor="title">Título (opcional)</label>
-                <input
-                  id="title"
-                  type="text"
-                  placeholder="Ex: Meu relacionamento especial"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  disabled={creating}
-                />
-              </div>
-
-              <div className="form-group">
                 <label htmlFor="type">Tipo de Relacionamento *</label>
                 <select
                   id="type"
@@ -242,12 +229,12 @@ const Dashboard = () => {
                   required
                   disabled={creating}
                 >
+                  <option value="solo">Solo</option>
                   <option value="dating">Namoro</option>
                   <option value="marriage">Casamento</option>
+                  <option value="poly">Poliamoroso</option>
+                  <option value="open">Relacionamento Aberto</option>
                   <option value="friendship">Amizade</option>
-                  <option value="family">Família</option>
-                  <option value="professional">Profissional</option>
-                  <option value="other">Outro</option>
                 </select>
               </div>
 

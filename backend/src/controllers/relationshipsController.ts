@@ -3,7 +3,7 @@ import { query } from '../config/database.js';
 import { AuthRequest } from '../middlewares/auth.js';
 
 export const createRelationship = async (req: AuthRequest, res: Response) => {
-    const { title, type, status, level, xp, settings } = req.body;
+    const { type } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -15,24 +15,44 @@ export const createRelationship = async (req: AuthRequest, res: Response) => {
     }
 
     try {
-        const result = await query(
-            `INSERT INTO relationships (title, type, status, level, xp, settings) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+        // 1. Criar o relacionamento
+        const relResult = await query(
+            `INSERT INTO relationships (type, status, level, xp, settings)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-            [
-                title || null,
-                type,
-                status || 'active',
-                level || 1,
-                xp || 0,
-                settings ? JSON.stringify(settings) : '{}'
-            ]
+            [type, 'active', 1, 0, '{}']
         );
 
-        res.status(201).json(result.rows[0]);
+        const relationship = relResult.rows[0];
+
+        // 2. Buscar ou criar node do usuário
+        let nodeResult = await query(
+            'SELECT id FROM nodes WHERE owner_id = $1 AND type = $2 LIMIT 1',
+            [userId, 'solo']
+        );
+
+        let nodeId;
+        if (nodeResult.rows.length === 0) {
+            // Criar node se não existir
+            const newNode = await query(
+                'INSERT INTO nodes (owner_id, name, type, metadata) VALUES ($1, $2, $3, $4) RETURNING id',
+                [userId, 'Meu Node', 'solo', '{}']
+            );
+            nodeId = newNode.rows[0].id;
+        } else {
+            nodeId = nodeResult.rows[0].id;
+        }
+
+        // 3. Vincular node ao relacionamento
+        await query(
+            'INSERT INTO relationship_members (relationship_id, node_id, role, permissions) VALUES ($1, $2, $3, $4)',
+            [relationship.id, nodeId, 'admin', '{}']
+        );
+
+        res.status(201).json(relationship);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Erro ao criar relacionamento:', err);
+        res.status(500).json({ message: 'Server error', error: err instanceof Error ? err.message : 'Unknown error' });
     }
 };
 

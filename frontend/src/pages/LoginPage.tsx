@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -43,13 +43,12 @@ const LoginPage = () => {
       >
         <div className="auth-header">
           <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="auth-icon"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ repeat: Infinity, duration: 4 }}
+            className="auth-logo-container"
           >
-            <Heart size={32} className="icon-primary" />
+            <img src="/assets/logo.png" alt="UNIA Logo" className="auth-logo" />
           </motion.div>
-          <h1 className="auth-title">UNIA</h1>
           <p className="auth-subtitle">
             {isLogin ? 'Bem-vindo de volta ao seu universo' : 'Comece sua jornada de conexão'}
           </p>

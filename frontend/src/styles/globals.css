@@ -385,23 +385,15 @@ body {
   margin-bottom: 32px;
 }
 
-.auth-icon {
+.auth-logo-container {
   display: inline-flex;
-  padding: 12px;
-  border-radius: 50%;
-  background: rgba(255, 126, 95, 0.1);
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
-.icon-primary {
-  color: var(--primary);
-  fill: var(--primary);
-}
-
-.auth-title {
-  font-size: 2rem;
-  margin-bottom: 8px;
-  font-weight: 700;
+.auth-logo {
+  width: 120px;
+  height: auto;
+  object-fit: contain;
 }
 
 .auth-subtitle {

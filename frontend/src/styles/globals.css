@@ -864,3 +864,106 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+/* SOS Floating Button */
+.sos-floating-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF4D4D, #B30000);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(255, 77, 77, 0.4);
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.sos-floating-btn::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4px solid #FF4D4D;
+  animation: s-pulse 2s infinite;
+}
+
+@keyframes s-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* SOS Modal */
+.sos-modal {
+  max-width: 450px !important;
+  background: rgba(20, 10, 10, 0.95) !important;
+  border: 1px solid rgba(255, 77, 77, 0.2) !important;
+}
+
+.sos-body {
+  padding: 20px 0;
+}
+
+.breathe-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 77, 77, 0.1);
+  border: 4px solid rgba(255, 77, 77, 0.3);
+  margin-bottom: 24px;
+}
+
+.sos-textarea {
+  width: 100%;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  resize: none;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.sos-textarea:focus {
+  border-color: rgba(255, 77, 77, 0.5);
+}
+
+.advice-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 77, 77, 0.05);
+  border: 1px solid rgba(255, 77, 77, 0.1);
+  border-radius: 12px;
+  align-items: center;
+}
+
+.advice-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 77, 77, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #FF4D4D;
+  flex-shrink: 0;
+}
+
+.loader-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+

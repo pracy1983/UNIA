@@ -35,7 +35,6 @@ const Sidebar = ({ active, onSelect }: { active: string; onSelect: (l: string) =
     {/* Logo apenas a imagem — sem texto "UNIA" abaixo */}
     <div className="sidebar-logo">
       <img src="/assets/logo.png" alt="UNIA" />
-      <span className="sidebar-logo-text">UNIA</span>
     </div>
 
     <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -105,10 +104,10 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="app-layout">
-      <Sidebar active={activeTab} onSelect={setActiveTab} />
-
-      <div className="content-area">
+    <>
+      <div className="app-layout">
+        <Sidebar active={activeTab} onSelect={setActiveTab} />
+        <div className="content-area">
 
         {/* ── Top Bar ── */}
         <motion.div
@@ -265,7 +264,8 @@ const Dashboard = () => {
         </div>
       )}
       <SOSButton />
-    </div>
+      </div>
+    </>
   );
 };
 

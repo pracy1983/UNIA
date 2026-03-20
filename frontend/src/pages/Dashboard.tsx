@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { 
+import {
   Home, Calendar, Link as LinkIcon, Orbit, Settings, Search as SearchIcon, Bell
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import RelationshipCard from '../components/dashboard/RelationshipCard';
 import { PillWidget, AlertWidget } from '../components/dashboard/DashboardWidgets';
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function getUserData() {
   try {
     const raw = localStorage.getItem('user');
@@ -19,30 +19,24 @@ function getUserData() {
   return { displayName: '' };
 }
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 const menuItems = [
-  { icon: <Home size={20} />, label: 'Início' },
-  { icon: <Calendar size={20} />, label: 'Calendário' },
-  { icon: <LinkIcon size={20} />, label: 'Conexões' },
-  { icon: <Orbit size={20} />, label: 'Meu Universo' },
-  { icon: <Settings size={20} />, label: 'Configurações' },
+  { icon: <Home size={18} />,     label: 'Início'        },
+  { icon: <Calendar size={18} />, label: 'Calendário'   },
+  { icon: <LinkIcon size={18} />, label: 'Conexões'     },
+  { icon: <Orbit size={18} />,    label: 'Meu Universo' },
+  { icon: <Settings size={18} />, label: 'Configurações'},
 ];
 
-const Sidebar = ({
-  active,
-  onSelect,
-}: {
-  active: string;
-  onSelect: (label: string) => void;
-}) => (
+const Sidebar = ({ active, onSelect }: { active: string; onSelect: (l: string) => void }) => (
   <aside className="sidebar">
-    {/* Logo + nome inline, igual ao mockup */}
+    {/* Logo apenas a imagem — sem texto "UNIA" abaixo */}
     <div className="sidebar-logo">
       <img src="/assets/logo.png" alt="UNIA" />
-      <span>UNIA</span>
+      <span className="sidebar-logo-text">UNIA</span>
     </div>
 
-    <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {menuItems.map(({ icon, label }) => (
         <button
           key={label}
@@ -57,21 +51,21 @@ const Sidebar = ({
   </aside>
 );
 
-// ─── Dashboard page ───────────────────────────────────────────────────────────
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Início');
+  // NENHUM relacionamento fictício — sempre busca do banco
   const [relationships, setRelationships] = useState<any[]>([]);
   const [loadingRel, setLoadingRel] = useState(true);
 
   const user = getUserData();
-  // Apenas pega o primeiro nome — se não existir exibe nada (sem fictício)
-  const firstName = user?.displayName ? user.displayName.split(' ')[0] : '';
+  // Proteção: se displayName for undefined/null/string vazia → string vazia
+  const firstName = (user?.displayName ?? '').split(' ')[0] || '';
 
   useEffect(() => {
-    axios
-      .get('/api/dashboard/relationships')
-      .then((r) => setRelationships(r.data))
+    axios.get('/api/dashboard/relationships')
+      .then(r => setRelationships(Array.isArray(r.data) ? r.data : []))
       .catch(() => setRelationships([]))
       .finally(() => setLoadingRel(false));
   }, []);
@@ -87,34 +81,35 @@ const Dashboard = () => {
       <Sidebar active={activeTab} onSelect={setActiveTab} />
 
       <div className="content-area">
-        {/* ── Top bar ── */}
-        <div className="topbar">
+
+        {/* ── Top Bar ── */}
+        <motion.div
+          className="topbar"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <div className="search-bar">
-            <SearchIcon size={18} color="rgba(255,255,255,0.35)" />
+            <SearchIcon size={16} color="rgba(255,255,255,0.32)" />
             <input placeholder="Pesquisar..." />
           </div>
 
           <div className="topbar-right">
-            <div className="user-pill" onClick={handleLogout} title="Sair">
-              <span>
-                Olá, <strong>{firstName || 'usuário'}!</strong>
-              </span>
-              <div className="user-avatar">
-                <img
-                  src={`https://i.pravatar.cc/80?u=${firstName || 'unia'}`}
-                  alt="avatar"
-                />
+            {firstName && (
+              <div className="user-pill" onClick={handleLogout} title="Clique para sair">
+                <span>Olá, <strong>{firstName}!</strong></span>
+                <div className="user-avatar">
+                  <img src={`https://i.pravatar.cc/80?u=${firstName}`} alt="avatar" />
+                </div>
               </div>
-            </div>
+            )}
             <button className="notif-btn">
-              <Bell size={20} />
+              <Bell size={18} />
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* ── Conteúdo principal ── */}
         {activeTab !== 'Início' ? (
-          // Página "Em breve"
           <div className="coming-soon">
             <h1>Em Breve</h1>
             <p>A página <strong>{activeTab}</strong> ainda está em construção.</p>
@@ -128,13 +123,11 @@ const Dashboard = () => {
             <section>
               <div className="section-header">
                 <h2>Relacionamentos Ativos</h2>
-                <button
-                  style={{
-                    background: 'none', border: 'none',
-                    color: 'rgba(255,255,255,0.35)',
-                    fontSize: '0.85rem', cursor: 'pointer',
-                  }}
-                >
+                <button style={{
+                  background: 'none', border: 'none',
+                  color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem',
+                  cursor: 'pointer', transition: 'color 0.2s'
+                }}>
                   Ver todos
                 </button>
               </div>

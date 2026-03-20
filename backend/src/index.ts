@@ -9,6 +9,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import relationshipsRoutes from './routes/relationshipsRoutes.js';
 import pillRoutes from './routes/pillRoutes.js';
 import memoryRoutes from './routes/memoryRoutes.js';
+import sosRoutes from './routes/sosRoutes.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/relationships', relationshipsRoutes);
 app.use('/api/pills', pillRoutes);
 app.use('/api/memories', memoryRoutes);
+app.use('/api/sos', sosRoutes);
 
 // Healthcheck
 app.get('/health', async (req, res) => {

@@ -96,4 +96,15 @@ export const createMemory = async (data: {
     return response.data;
 };
 
+export interface SOSResponse {
+    session: any;
+    advice: string[];
+}
+
+// ─── SOS / Emergência ──────────────────────────────────────────────────────────
+export const triggerSOS = async (relationshipId?: string, message?: string): Promise<SOSResponse> => {
+    const response = await api.post('/sos/trigger', { relationshipId, message });
+    return response.data;
+};
+
 export default api;

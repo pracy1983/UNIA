@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, X, Clock } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRelationshipById, getMemories, createMemory, Memory, Relationship } from '../services/api';
+import { SOSButton } from '../components/dashboard/SOSButton';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const TYPE_LABELS: Record<string, string> = {
@@ -305,6 +306,8 @@ const RelationshipDetail = () => {
       {showModal && id && (
         <MemoryFormModal relId={id} onClose={() => setShowModal(false)} onCreated={handleCreated} />
       )}
+
+      <SOSButton relationshipId={id} />
     </div>
   );
 };

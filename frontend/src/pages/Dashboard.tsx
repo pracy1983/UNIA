@@ -7,6 +7,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import RelationshipCard from '../components/dashboard/RelationshipCard';
 import { PillWidget, AlertWidget } from '../components/dashboard/DashboardWidgets';
+import { SOSButton } from '../components/dashboard/SOSButton';
 import { createRelationship, CreateRelationshipData } from '../services/api';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -263,6 +264,7 @@ const Dashboard = () => {
           </motion.div>
         </div>
       )}
+      <SOSButton />
     </div>
   );
 };

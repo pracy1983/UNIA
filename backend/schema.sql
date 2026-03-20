@@ -106,3 +106,13 @@ CREATE TABLE daily_pills (
 
 -- Unique constraint for one pill per user per day
 CREATE UNIQUE INDEX idx_daily_pills_user_day ON daily_pills (user_id, date_trunc('day', created_at));
+
+-- SOS Sessions (Emergency Mediation)
+CREATE TABLE sos_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    relationship_id UUID REFERENCES relationships(id) ON DELETE CASCADE,
+    advice_received JSONB NOT NULL, -- Current 3 AI tips
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'resolved', 'escalated')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

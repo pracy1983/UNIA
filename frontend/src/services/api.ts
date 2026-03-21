@@ -20,6 +20,7 @@ api.interceptors.request.use((config) => {
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 export interface CreateRelationshipData {
     type: 'solo' | 'dating' | 'marriage' | 'poly' | 'open' | 'friendship';
+    partnerName?: string;
 }
 
 export interface Relationship {

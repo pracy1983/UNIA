@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 
 interface RelationshipCardProps {
   id: string;
+  title?: string;
   type: string;
   status: string;
   level: number;
@@ -16,6 +17,7 @@ interface RelationshipCardProps {
 
 
 const RelationshipCard: React.FC<RelationshipCardProps> = ({
+  title,
   type,
   level,
   percentage,
@@ -34,7 +36,7 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({
     friendship: 'Amizade'
   };
 
-  const displayName = typeLabels[type] || type;
+  const displayName = title || typeLabels[type] || type;
 
   return (
     <motion.div

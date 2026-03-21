@@ -152,25 +152,7 @@ const Dashboard = () => {
                 <h2>Relacionamentos Ativos</h2>
                 <button
                   onClick={() => setShowModal(true)}
-                  style={{
-                    background: 'rgba(139, 92, 246, 0.2)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    color: 'rgba(255,255,255,0.9)',
-                    fontSize: '0.85rem',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(139, 92, 246, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
-                  }}
+                  className="btn-add-glass"
                 >
                   <Plus size={16} />
                   Adicionar Relacionamento
@@ -231,7 +213,7 @@ const Dashboard = () => {
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                   required
-                  disabled={creating}
+                   disabled={creating}
                 >
                   <option value="solo">Solo</option>
                   <option value="dating">Namoro</option>
@@ -240,6 +222,23 @@ const Dashboard = () => {
                   <option value="open">Relacionamento Aberto</option>
                   <option value="friendship">Amizade</option>
                 </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="partnerName">Nome do Parceiro(a) (opcional)</label>
+                <input
+                  id="partnerName"
+                  type="text"
+                  placeholder="Ex: Ana, João..."
+                  value={formData.partnerName || ''}
+                  onChange={(e) => setFormData({ ...formData, partnerName: e.target.value })}
+                  className="input-field"
+                  style={{ width: '100%', padding: '10px 14px' }}
+                  disabled={creating}
+                />
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+                  Isso criará um perfil básico para essa pessoa no sistema.
+                </p>
               </div>
 
               <div className="modal-actions">

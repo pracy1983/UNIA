@@ -803,9 +803,48 @@ body {
 
 .btn-secondary:disabled,
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Glassmorphism Action Button */
+.btn-add-glass {
+  background: rgba(139, 92, 246, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #DDD6FE;
+  font-size: 0.85rem;
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
+}
+
+.btn-add-glass:hover {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.2);
+  color: white;
+}
+
+.btn-add-glass:active {
+  transform: translateY(0);
+}
+
+.btn-add-glass svg {
+  transition: transform 0.3s ease;
+}
+
+.btn-add-glass:hover svg {
+  transform: rotate(90deg) scale(1.1);
 }
 
 /* ===== COMING SOON ===== */

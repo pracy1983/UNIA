@@ -3,7 +3,7 @@ import { query } from '../config/database.js';
 import { AuthRequest } from '../middlewares/auth.js';
 
 export const createRelationship = async (req: AuthRequest, res: Response) => {
-    const { type } = req.body;
+    const { type, partnerName } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -17,37 +17,51 @@ export const createRelationship = async (req: AuthRequest, res: Response) => {
     try {
         // 1. Criar o relacionamento
         const relResult = await query(
-            `INSERT INTO relationships (type, status, level, xp, settings)
-       VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO relationships (type, status, level, xp, settings, title)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-            [type, 'active', 1, 0, '{}']
+            [type, 'active', 1, 0, '{}', partnerName || 'Novo Relacionamento']
         );
 
         const relationship = relResult.rows[0];
 
-        // 2. Buscar ou criar node do usuário
+        // 2. Buscar ou criar node do usuário (Dono)
         let nodeResult = await query(
             'SELECT id FROM nodes WHERE owner_id = $1 AND type = $2 LIMIT 1',
             [userId, 'solo']
         );
 
-        let nodeId;
+        let userNodeId;
         if (nodeResult.rows.length === 0) {
-            // Criar node se não existir
             const newNode = await query(
                 'INSERT INTO nodes (owner_id, name, type, metadata) VALUES ($1, $2, $3, $4) RETURNING id',
                 [userId, 'Meu Node', 'solo', '{}']
             );
-            nodeId = newNode.rows[0].id;
+            userNodeId = newNode.rows[0].id;
         } else {
-            nodeId = nodeResult.rows[0].id;
+            userNodeId = nodeResult.rows[0].id;
         }
 
-        // 3. Vincular node ao relacionamento
+        // 3. Vincular usuário proprietário como admin
         await query(
             'INSERT INTO relationship_members (relationship_id, node_id, role, permissions) VALUES ($1, $2, $3, $4)',
-            [relationship.id, nodeId, 'admin', '{}']
+            [relationship.id, userNodeId, 'admin', '{}']
         );
+
+        // 4. Se houver nome do parceiro, criar node para o parceiro
+        if (partnerName) {
+            const partnerNode = await query(
+                'INSERT INTO nodes (owner_id, name, type, metadata) VALUES ($1, $2, $3, $4) RETURNING id',
+                [userId, partnerName, 'individual', '{}']
+            );
+            const partnerNodeId = partnerNode.rows[0].id;
+
+            // Vincular parceiro como member
+            await query(
+                'INSERT INTO relationship_members (relationship_id, node_id, role, permissions) VALUES ($1, $2, $3, $4)',
+                [relationship.id, partnerNodeId, 'member', '{}']
+            );
+        }
 
         res.status(201).json(relationship);
     } catch (err) {

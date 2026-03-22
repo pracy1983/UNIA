@@ -33,7 +33,7 @@ git push origin main
 
 4. Verificar o healthcheck em produção (aguardar ~2-3 min para o build)
 ```
-https://unia.vrdncy.easypanel.host/health
+https://unia.vrdrcy.easypanel.host/health
 ```
 
 ## Regras

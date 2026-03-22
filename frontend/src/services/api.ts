@@ -21,6 +21,7 @@ api.interceptors.request.use((config) => {
 export interface CreateRelationshipData {
     type: 'namoro' | 'casamento' | 'noivado' | 'afeto' | 'ficante' | 'amizade colorida' | 'solo' | 'dating' | 'marriage' | 'poly' | 'open' | 'friendship';
     partnerName?: string;
+    startedAt?: string;
 }
 
 export interface Relationship {
@@ -32,6 +33,21 @@ export interface Relationship {
     xp: number;
     percentage: number;
     progressValue: number;
+    started_at?: string;
+    invite_token?: string;
+    is_archived?: boolean;
+}
+
+export interface WishlistItem {
+    id: string;
+    relationship_id: string;
+    user_id: string;
+    title: string;
+    link_url?: string;
+    image_url?: string;
+    description?: string;
+    category?: string;
+    created_at: string;
 }
 
 export interface Pill {
@@ -69,6 +85,26 @@ export const getRelationshipById = async (id: string): Promise<Relationship> => 
     return response.data;
 };
 
+export const archiveRelationship = async (id: string): Promise<Relationship> => {
+    const response = await api.put(`/relationships/${id}/archive`);
+    return response.data;
+};
+
+export const deleteRelationship = async (id: string): Promise<void> => {
+    await api.delete(`/relationships/${id}`);
+};
+
+// ─── Convites ───────────────────────────────────────────────────────────────
+export const getRelationshipByInvite = async (token: string): Promise<Relationship> => {
+    const response = await api.get(`/relationships/invite/${token}`);
+    return response.data;
+};
+
+export const acceptInvite = async (token: string): Promise<{ relationshipId: string }> => {
+    const response = await api.post('/relationships/invite/accept', { token });
+    return response.data;
+};
+
 // ─── Pílulas ──────────────────────────────────────────────────────────────────
 export const savePill = async (mood: string, note?: string): Promise<Pill> => {
     const response = await api.post('/pills', { mood, note });
@@ -102,9 +138,23 @@ export interface SOSResponse {
     advice: string[];
 }
 
-// ─── SOS / Emergência ──────────────────────────────────────────────────────────
-export const triggerSOS = async (relationshipId?: string, message?: string): Promise<SOSResponse> => {
-    const response = await api.post('/sos/trigger', { relationshipId, message });
+// ─── Wishlist ───────────────────────────────────────────────────────────────
+export const getWishlist = async (relationshipId: string): Promise<WishlistItem[]> => {
+    const response = await api.get(`/wishlist/${relationshipId}`);
+    return Array.isArray(response.data) ? response.data : [];
+};
+
+export const addWishlistItem = async (data: Partial<WishlistItem>): Promise<WishlistItem> => {
+    const response = await api.post('/wishlist', data);
+    return response.data;
+};
+
+export const deleteWishlistItem = async (id: string): Promise<void> => {
+    await api.delete(`/wishlist/${id}`);
+};
+
+export const updateRelationship = async (id: string, data: any): Promise<Relationship> => {
+    const response = await api.put(`/relationships/${id}`, data);
     return response.data;
 };
 

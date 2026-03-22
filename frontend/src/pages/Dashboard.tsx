@@ -61,7 +61,8 @@ const Dashboard = () => {
   const [loadingRel, setLoadingRel] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<CreateRelationshipData>({
-    type: 'dating'
+    type: 'dating',
+    startedAt: new Date().toISOString().split('T')[0]
   });
   const [creating, setCreating] = useState(false);
 
@@ -93,7 +94,10 @@ const Dashboard = () => {
     try {
       await createRelationship(formData);
       setShowModal(false);
-      setFormData({ type: 'dating' });
+      setFormData({ 
+        type: 'dating',
+        startedAt: new Date().toISOString().split('T')[0]
+      });
       fetchRelationships();
     } catch (error) {
       console.error('Erro ao criar relacionamento:', error);
@@ -160,9 +164,24 @@ const Dashboard = () => {
               </div>
 
               {loadingRel ? null : relationships.length === 0 ? (
-                <div className="empty-state">
-                  Sem relacionamentos ativos cadastrados ainda.
-                </div>
+                <motion.div 
+                  className="empty-state-premium"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  <div className="empty-icon-glow">
+                    <Orbit size={48} color="rgba(255,255,255,0.2)" />
+                  </div>
+                  <h3>Seu Universo está começando...</h3>
+                  <p>Você ainda não tem relacionamentos ativos. Que tal começar a cultivar uma nova conexão?</p>
+                  <button 
+                    onClick={() => setShowModal(true)}
+                    className="btn-primary-glow"
+                  >
+                    <Plus size={18} />
+                    Cultivar Primeiro Relacionamento
+                  </button>
+                </motion.div>
               ) : (
                 <div className="relationships-row">
                   {relationships.map((rel, i) => (
@@ -205,7 +224,7 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateRelationship}>
+            <form onSubmit={handleCreateRelationship} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="form-group">
                 <label htmlFor="type">Tipo de Relacionamento *</label>
                 <select
@@ -238,6 +257,22 @@ const Dashboard = () => {
                 />
                 <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
                   Isso criará um perfil básico para essa pessoa no sistema.
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="startedAt">Data de Início *</label>
+                <input
+                  id="startedAt"
+                  type="date"
+                  value={formData.startedAt}
+                  onChange={(e) => setFormData({ ...formData, startedAt: e.target.value })}
+                  className="input-field"
+                  required
+                  disabled={creating}
+                />
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+                  Sugerimos a data de hoje para iniciar seu registro.
                 </p>
               </div>
 

@@ -10,6 +10,7 @@ import relationshipsRoutes from './routes/relationshipsRoutes.js';
 import pillRoutes from './routes/pillRoutes.js';
 import memoryRoutes from './routes/memoryRoutes.js';
 import sosRoutes from './routes/sosRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/relationships', relationshipsRoutes);
 app.use('/api/pills', pillRoutes);
 app.use('/api/memories', memoryRoutes);
 app.use('/api/sos', sosRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Healthcheck
 app.get('/health', async (req, res) => {

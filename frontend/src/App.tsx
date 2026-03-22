@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import OnboardingPage from './pages/OnboardingPage';
 import RelationshipDetail from './pages/RelationshipDetail';
+import InvitePage from './pages/InvitePage';
 
 // Simple Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -68,6 +69,12 @@ export default function App() {
         <Route path="/relationship/:id" element={
           <ProtectedRoute>
             <RelationshipDetail />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/invite/:token" element={
+          <ProtectedRoute>
+            <InvitePage />
           </ProtectedRoute>
         } />
 

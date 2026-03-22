@@ -1,18 +1,35 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, X, Clock } from 'lucide-react';
+import { 
+  ArrowLeft, Plus, X, Clock, Trash2, Archive, Heart, 
+  Share2, Camera, Link as LinkIcon, MessageCircle, Edit3
+} from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getRelationshipById, getMemories, createMemory, Memory, Relationship } from '../services/api';
+import { 
+  getRelationshipById, 
+  getMemories, 
+  createMemory, 
+  Memory, 
+  Relationship,
+  archiveRelationship,
+  deleteRelationship,
+  updateRelationship,
+  getWishlist,
+  addWishlistItem,
+  deleteWishlistItem,
+  WishlistItem
+} from '../services/api';
 import { SOSButton } from '../components/dashboard/SOSButton';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const TYPE_LABELS: Record<string, string> = {
+  namoro: 'Namoro',
+  casamento: 'Casamento',
+  noivado: 'Noivado',
+  afeto: 'Afeto',
+  ficante: 'Ficante',
+  'amizade colorida': 'Amizade Colorida',
   solo: 'Solo',
-  dating: 'Namoro',
-  marriage: 'Casamento',
-  poly: 'Poliamoroso',
-  open: 'Relacionamento Aberto',
-  friendship: 'Amizade',
 };
 
 function formatDate(iso: string) {
@@ -20,113 +37,6 @@ function formatDate(iso: string) {
     day: '2-digit', month: 'long', year: 'numeric',
   });
 }
-
-// ─── Memory Form ──────────────────────────────────────────────────────────────
-const MemoryFormModal = ({
-  relId,
-  onClose,
-  onCreated,
-}: {
-  relId: string;
-  onClose: () => void;
-  onCreated: (m: Memory) => void;
-}) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) { setErr('Título é obrigatório.'); return; }
-    setSaving(true);
-    try {
-      const m = await createMemory({
-        relationship_id: relId,
-        title: title.trim(),
-        content: content.trim() || undefined,
-        occurrence_date: new Date(date).toISOString(),
-      });
-      onCreated(m);
-      onClose();
-    } catch {
-      setErr('Erro ao salvar. Tente novamente.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <motion.div
-        className="modal-content"
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <h3>Novo Momento</h3>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Título *</label>
-            <input
-              type="text"
-              placeholder="Ex: Primeira viagem juntos"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input-field"
-              style={{ padding: '12px 16px' }}
-              disabled={saving}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Data</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="input-field"
-              style={{ padding: '12px 16px', colorScheme: 'dark' }}
-              disabled={saving}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Descrição (opcional)</label>
-            <textarea
-              placeholder="O que aconteceu? Como você estava se sentindo?"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={4}
-              style={{
-                width: '100%', padding: '12px 16px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '12px', color: 'white',
-                resize: 'none', outline: 'none', fontSize: '0.9rem',
-              }}
-              disabled={saving}
-            />
-          </div>
-
-          {err && <p style={{ color: '#FF7E5F', fontSize: '0.82rem', textAlign: 'center' }}>{err}</p>}
-
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Salvando...' : 'Registrar Momento'}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
-  );
-};
 
 // ─── Timeline Item ─────────────────────────────────────────────────────────────
 const TimelineItem = ({ memory, index }: { memory: Memory; index: number }) => (
@@ -136,25 +46,18 @@ const TimelineItem = ({ memory, index }: { memory: Memory; index: number }) => (
     transition={{ delay: index * 0.06 }}
     style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}
   >
-    {/* Dot + line */}
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingTop: '4px' }}>
       <div style={{
         width: '10px', height: '10px', borderRadius: '50%',
         background: 'linear-gradient(135deg, #FF7E5F, #FEB47B)',
         boxShadow: '0 0 8px rgba(255,126,95,0.5)',
-        flexShrink: 0,
       }} />
       <div style={{ width: '1px', flex: 1, background: 'rgba(255,255,255,0.08)', marginTop: '6px' }} />
     </div>
 
-    {/* Card */}
     <div style={{
-      flex: 1,
-      background: 'rgba(255,255,255,0.045)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: '14px',
-      padding: '14px 16px',
-      marginBottom: '16px',
+      flex: 1, background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '14px', padding: '14px 16px', marginBottom: '16px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
         <Clock size={12} style={{ color: 'rgba(255,255,255,0.35)' }} />
@@ -162,153 +65,383 @@ const TimelineItem = ({ memory, index }: { memory: Memory; index: number }) => (
           {formatDate(memory.occurrence_date)}
         </span>
       </div>
-      <p style={{ fontSize: '0.92rem', fontWeight: 600, color: 'white', marginBottom: memory.content ? '6px' : 0 }}>
-        {memory.title}
-      </p>
-      {memory.content && (
-        <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
-          {memory.content}
-        </p>
-      )}
+      <p style={{ fontSize: '0.92rem', fontWeight: 600, color: 'white' }}>{memory.title}</p>
+      {memory.content && <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>{memory.content}</p>}
     </div>
   </motion.div>
 );
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 const RelationshipDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [rel, setRel] = useState<Relationship | null>(null);
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'memories' | 'wishlist' | 'settings'>('memories');
+  
+  const [showMemoryModal, setShowMemoryModal] = useState(false);
+  const [showWishlistModal, setShowWishlistModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
-  useEffect(() => {
+  const fetchData = async () => {
     if (!id) return;
-    Promise.all([
-      getRelationshipById(id).catch(() => null),
-      getMemories(id).catch(() => []),
-    ]).then(([relData, memData]) => {
+    setLoading(true);
+    try {
+      const [relData, memData, wishData] = await Promise.all([
+        getRelationshipById(id).catch(() => null),
+        getMemories(id).catch(() => []),
+        getWishlist(id).catch(() => []),
+      ]);
       setRel(relData);
-      setMemories(Array.isArray(memData) ? memData : []);
-    }).finally(() => setLoading(false));
-  }, [id]);
-
-  const handleCreated = (m: Memory) => {
-    setMemories((prev) => [m, ...prev]);
+      setMemories(memData);
+      setWishlist(wishData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) {
+  useEffect(() => {
+    fetchData();
+  }, [id]);
+
+  const handleArchive = async () => {
+    if (!id || !window.confirm('Arquivar este relacionamento? Ele sairá da Dashboard principal.')) return;
+    try {
+      await archiveRelationship(id);
+      navigate('/dashboard');
+    } catch {
+      alert('Erro ao arquivar.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !window.confirm('ELIMINAR PERMANENTEMENTE? Todos os dados, fotos e memórias serão apagados.')) return;
+    try {
+      await deleteRelationship(id);
+      navigate('/dashboard');
+    } catch {
+      alert('Erro ao deletar.');
+    }
+  };
+
+  const handleWhatsAppInvite = () => {
+    if (!rel?.invite_token) return;
+    const link = `${window.location.origin}/invite/${rel.invite_token}`;
+    const text = `Olá! Quero cultivar nossa conexão no UNIA. Use este link para se conectar: ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  if (loading || !rel) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <div className="empty-state">Carregando...</div>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="loader"></div>
       </div>
     );
   }
 
-  const typeName = rel ? (TYPE_LABELS[rel.type] || rel.type) : 'Relacionamento';
+  const typeName = TYPE_LABELS[rel.type] || rel.type;
 
   return (
-    <div className="app-layout" style={{ flexDirection: 'column', padding: '20px 32px', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
-
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '28px' }}>
-        <button
-          onClick={() => navigate('/dashboard')}
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            padding: '10px',
-            color: 'rgba(255,255,255,0.7)',
-            cursor: 'pointer',
-            display: 'flex',
-            transition: 'all 0.2s',
-          }}
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 700 }}>{typeName}</h1>
-          {rel && (
-            <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
-              Nível {rel.level} · Status: {rel.status}
+    <div className="app-layout" style={{ display: 'block', maxWidth: '1000px', margin: '0 auto', overflowY: 'auto' }}>
+      
+      {/* Header Section */}
+      <div className="rel-detail-header" style={{ marginBottom: '32px' }}>
+        <div className="rel-info-main">
+          <button onClick={() => navigate('/dashboard')} className="modal-close" style={{ padding: '8px' }}>
+            <ArrowLeft size={18} />
+          </button>
+          <div className="rel-avatar-large" style={{ position: 'relative' }}>
+            <img src={`https://i.pravatar.cc/150?u=${rel.id}`} alt="Partner" />
+            <div style={{ position: 'absolute', bottom: 0, right: 0, padding: '4px', background: 'var(--primary)', borderRadius: '50%', border: '2px solid #0f1223', cursor: 'pointer' }} title="Mudar Foto">
+              <Camera size={12} color="white" />
+            </div>
+          </div>
+          <div className="rel-title-group">
+            <span className="rel-type-tag">{typeName}</span>
+            <h1>{rel.title}</h1>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Clock size={14} /> Juntos desde {rel.started_at ? formatDate(rel.started_at) : 'sempre'}
             </p>
-          )}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+           <button onClick={handleWhatsAppInvite} className="btn-add-glass" style={{ background: 'rgba(37, 211, 102, 0.1)', borderColor: 'rgba(37, 211, 102, 0.2)' }}>
+             <MessageCircle size={16} color="#25D366" /> Convidar
+           </button>
         </div>
       </div>
 
-      {/* XP bar */}
-      {rel && (
-        <div style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '14px',
-          padding: '16px 20px',
-          marginBottom: '28px',
-          display: 'flex',
-          gap: '20px',
-          alignItems: 'center'
-        }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
-              <span>Nível {rel.level}</span>
-              <span>{rel.xp} XP</span>
-            </div>
-            <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '999px', overflow: 'hidden' }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min((rel.xp % 100), 100)}%` }}
-                transition={{ duration: 1.2, ease: 'easeOut' }}
-                style={{ height: '100%', background: 'linear-gradient(90deg, #FF7E5F, #FEB47B)', borderRadius: '999px' }}
-              />
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>Nível {rel.level}</div>
-            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>{rel.type}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Momentos */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '0.95rem', fontWeight: 600 }}>Linha do Tempo</h2>
-        <button
-          onClick={() => setShowModal(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '8px 14px', borderRadius: '10px',
-            background: 'rgba(255,126,95,0.12)', border: '1px solid rgba(255,126,95,0.3)',
-            color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          <Plus size={14} />
-          Registrar Momento
-        </button>
+      {/* Tabs */}
+      <div className="tab-nav" style={{ marginBottom: '24px' }}>
+        <button className={`tab-btn ${activeTab === 'memories' ? 'active' : ''}`} onClick={() => setActiveTab('memories')}>Memórias</button>
+        <button className={`tab-btn ${activeTab === 'wishlist' ? 'active' : ''}`} onClick={() => setActiveTab('wishlist')}>Wishlist</button>
+        <button className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>Configurações</button>
       </div>
 
-      {memories.length === 0 ? (
-        <div className="empty-state">
-          Nenhum momento registrado ainda.<br />
-          <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>Registre o primeiro marco desta relação!</span>
-        </div>
-      ) : (
-        <div>
-          {memories.map((m, i) => (
-            <TimelineItem key={m.id} memory={m} index={i} />
-          ))}
-        </div>
-      )}
+      {/* Tab Content */}
+      <div className="tab-content">
+        {activeTab === 'memories' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Linha do Tempo</h2>
+              <button onClick={() => setShowMemoryModal(true)} className="btn-add-glass">
+                <Plus size={16} /> Novo Momento
+              </button>
+            </div>
 
-      {showModal && id && (
-        <MemoryFormModal relId={id} onClose={() => setShowModal(false)} onCreated={handleCreated} />
+            {memories.length === 0 ? (
+               <div className="empty-state-premium">
+                 <h3>Nenhuma memória ainda</h3>
+                 <p>Comece a registrar os momentos que tornam esta conexão única.</p>
+                 <button onClick={() => setShowMemoryModal(true)} className="btn-primary-glow">Registrar Primeiro Momento</button>
+               </div>
+            ) : (
+              <div style={{ paddingLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+                {memories.map((m, i) => <TimelineItem key={m.id} memory={m} index={i} />)}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === 'wishlist' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Desejos e Conquistas</h2>
+              <button onClick={() => setShowWishlistModal(true)} className="btn-add-glass">
+                <Plus size={16} /> Novo Desejo
+              </button>
+            </div>
+
+            {wishlist.length === 0 ? (
+               <div className="empty-state-premium">
+                 <h3>O que vocês sonham?</h3>
+                 <p>Adicione links de presentes, lugares para viajar ou planos para o futuro.</p>
+                 <button onClick={() => setShowWishlistModal(true)} className="btn-primary-glow">Adicionar Primeiro Desejo</button>
+               </div>
+            ) : (
+              <div className="wishlist-grid">
+                {wishlist.map(item => (
+                  <div key={item.id} className="wishlist-card">
+                    <div className="wishlist-img">
+                      {item.image_url ? <img src={item.image_url} alt="" /> : <LinkIcon size={32} style={{ opacity: 0.1 }} />}
+                    </div>
+                    <div className="wishlist-info">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h4>{item.title}</h4>
+                        <button onClick={() => deleteWishlistItem(item.id).then(fetchData)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer' }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                      {item.description && <p>{item.description}</p>}
+                      {item.link_url && (
+                        <a href={item.link_url} target="_blank" rel="noreferrer" className="wishlist-link">
+                          Ver item <ArrowLeft size={12} style={{ transform: 'rotate(135deg)' }} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === 'settings' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+             <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px' }}>Opções da Conexão</h2>
+             
+             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', padding: '24px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>Cultivar Conexão</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '4px' }}>Status Atual: <strong>{typeName}</strong></p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Uma mudança aqui será registrada no histórico com a data que você escolher.</p>
+                  </div>
+                  <button onClick={() => setShowStatusModal(true)} className="btn-add-glass">
+                    <Edit3 size={16} /> Atualizar Status
+                  </button>
+                </div>
+             </div>
+
+             <div className="danger-zone">
+               <h3>Zona de Gerenciamento</h3>
+               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>Ações permanentes ou de arquivamento desta conexão.</p>
+               <div style={{ display: 'flex', gap: '12px' }}>
+                  <button onClick={handleArchive} className="btn-danger" style={{ background: 'rgba(255,255,255,0.05)', color: 'white', borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <Archive size={16} /> Arquivar
+                  </button>
+                  <button onClick={handleDelete} className="btn-danger">
+                    <Trash2 size={16} /> Excluir Permanentemente
+                  </button>
+               </div>
+             </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showMemoryModal && (
+        <MemoryForm id={id} onClose={() => setShowMemoryModal(false)} onCreated={fetchData} />
+      )}
+      {showWishlistModal && (
+        <WishlistForm id={id} onClose={() => setShowWishlistModal(false)} onCreated={fetchData} />
+      )}
+      {showStatusModal && (
+        <StatusUpdateModal 
+          id={id} 
+          currentType={rel.type} 
+          onClose={() => setShowStatusModal(false)} 
+          onUpdated={fetchData} 
+        />
       )}
 
       <SOSButton relationshipId={id} />
     </div>
+  );
+};
+
+// ─── Sub-Forms ───────────────────────────────────────────────────────────────
+const StatusUpdateModal = ({ id, currentType, onClose, onUpdated }: any) => {
+  const [newType, setNewType] = useState(currentType);
+  const [changeDate, setChangeDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateRelationship(id, { type: newType, changeDate });
+      onUpdated();
+      onClose();
+    } catch {
+      alert('Erro ao atualizar status.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <motion.div className="modal-content" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}>
+         <h3>Atualizar Status da Relação</h3>
+         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+           Isso registrará a mudança de <strong>{TYPE_LABELS[currentType] || currentType}</strong> para o novo status.
+         </p>
+         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group">
+              <label>Novo Status</label>
+              <select value={newType} onChange={e => setNewType(e.target.value)} className="input-field" required>
+                <option value="namoro">Namoro</option>
+                <option value="casamento">Casamento</option>
+                <option value="noivado">Noivado</option>
+                <option value="afeto">Afeto</option>
+                <option value="ficante">Ficante</option>
+                <option value="amizade colorida">Amizade Colorida</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Data da Mudança</label>
+              <input type="date" value={changeDate} onChange={e => setChangeDate(e.target.value)} required className="input-field" />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+              <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Atualizar' : 'Confirmar Mudança'}</button>
+            </div>
+         </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const MemoryForm = ({ id, onClose, onCreated }: any) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await createMemory({ relationship_id: id, title, content, occurrence_date: date });
+      onCreated();
+      onClose();
+    } catch {
+      alert('Erro ao salvar momento.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+     <div className="modal-overlay" onClick={onClose}>
+       <motion.div className="modal-content" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}>
+         <h3>Registrar Momento</h3>
+         <form onSubmit={handleSubmit} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group">
+              <label>O que aconteceu?</label>
+              <input value={title} onChange={e => setTitle(e.target.value)} required className="input-field" placeholder="Ex: Primeiro encontro..." />
+            </div>
+            <div className="form-group">
+              <label>Data</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="input-field" />
+            </div>
+            <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Detalhes (opcional)" className="input-field" rows={3} style={{ resize: 'none' }} />
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+              <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Registrar'}</button>
+            </div>
+         </form>
+       </motion.div>
+     </div>
+  );
+};
+
+const WishlistForm = ({ id, onClose, onCreated }: any) => {
+  const [title, setTitle] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await addWishlistItem({ relationship_id: id, title, link_url: linkUrl });
+      onCreated();
+      onClose();
+    } catch {
+      alert('Erro ao salvar desejo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+     <div className="modal-overlay" onClick={onClose}>
+       <motion.div className="modal-content" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}>
+         <h3>Novo Desejo</h3>
+         <form onSubmit={handleSubmit} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group">
+              <label>Desejo</label>
+              <input value={title} onChange={e => setTitle(e.target.value)} required className="input-field" placeholder="Ex: Jantar no restaurante X..." />
+            </div>
+            <div className="form-group">
+              <label>Link (opcional)</label>
+              <input type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} className="input-field" placeholder="https://..." />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+              <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Adicionar'}</button>
+            </div>
+         </form>
+       </motion.div>
+     </div>
   );
 };
 

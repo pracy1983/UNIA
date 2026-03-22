@@ -215,12 +215,12 @@ const Dashboard = () => {
                   required
                    disabled={creating}
                 >
-                  <option value="solo">Solo</option>
-                  <option value="dating">Namoro</option>
-                  <option value="marriage">Casamento</option>
-                  <option value="poly">Poliamoroso</option>
-                  <option value="open">Relacionamento Aberto</option>
-                  <option value="friendship">Amizade</option>
+                  <option value="namoro">Namoro</option>
+                  <option value="casamento">Casamento</option>
+                  <option value="noivado">Noivado</option>
+                  <option value="afeto">Afeto</option>
+                  <option value="ficante">Ficante</option>
+                  <option value="amizade colorida">Amizade Colorida</option>
                 </select>
               </div>
 

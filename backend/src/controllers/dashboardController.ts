@@ -22,7 +22,8 @@ export const getActiveRelationships = async (req: AuthRequest, res: Response) =>
         r.type, 
         r.status, 
         r.level, 
-        r.xp
+        r.xp,
+        r.updated_at
       FROM relationships r
       INNER JOIN relationship_members rm ON r.id = rm.relationship_id
       INNER JOIN nodes n ON rm.node_id = n.id

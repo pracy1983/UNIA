@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, Plus, X, Clock, Trash2, Archive, Heart, 
-  Share2, Camera, Link as LinkIcon, MessageCircle, Edit3
+  ArrowLeft, Plus, X, Clock, Trash2, Archive,
+  Camera, Link as LinkIcon, MessageCircle, Edit3
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -85,6 +85,7 @@ const RelationshipDetail = () => {
   const [showMemoryModal, setShowMemoryModal] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   const fetchData = async () => {
     if (!id) return;
@@ -145,6 +146,10 @@ const RelationshipDetail = () => {
   }
 
   const typeName = TYPE_LABELS[rel.type] || rel.type;
+  
+  const displayPhotoUrl = rel.settings?.custom_photo 
+    || rel.partner_node?.photo_url 
+    || `https://i.pravatar.cc/150?u=${rel.id}`;
 
   return (
     <div className="app-layout" style={{ display: 'block', maxWidth: '1000px', margin: '0 auto', overflowY: 'auto' }}>
@@ -156,8 +161,12 @@ const RelationshipDetail = () => {
             <ArrowLeft size={18} />
           </button>
           <div className="rel-avatar-large" style={{ position: 'relative' }}>
-            <img src={`https://i.pravatar.cc/150?u=${rel.id}`} alt="Partner" />
-            <div style={{ position: 'absolute', bottom: 0, right: 0, padding: '4px', background: 'var(--primary)', borderRadius: '50%', border: '2px solid #0f1223', cursor: 'pointer' }} title="Mudar Foto">
+            <img src={displayPhotoUrl} alt="Partner" style={{ objectFit: 'cover' }} />
+            <div 
+              onClick={() => setShowPhotoModal(true)}
+              style={{ position: 'absolute', bottom: 0, right: 0, padding: '4px', background: 'var(--primary)', borderRadius: '50%', border: '2px solid #0f1223', cursor: 'pointer' }} 
+              title="Mudar Foto"
+            >
               <Camera size={12} color="white" />
             </div>
           </div>
@@ -300,6 +309,14 @@ const RelationshipDetail = () => {
           onUpdated={fetchData} 
         />
       )}
+      {showPhotoModal && (
+        <PhotoUpdateModal
+          id={id}
+          rel={rel}
+          onClose={() => setShowPhotoModal(false)}
+          onUpdated={fetchData}
+        />
+      )}
 
       <SOSButton relationshipId={id} />
     </div>
@@ -354,6 +371,104 @@ const StatusUpdateModal = ({ id, currentType, onClose, onUpdated }: any) => {
               <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Atualizar' : 'Confirmar Mudança'}</button>
             </div>
          </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const PhotoUpdateModal = ({ id, rel, onClose, onUpdated }: any) => {
+  const [saving, setSaving] = useState(false);
+  
+  const handleFileUpload = (e: any) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result;
+      if (!base64) return;
+      
+      setSaving(true);
+      try {
+        const newSettings = { ...(rel.settings || {}), custom_photo: base64 };
+        await updateRelationship(id, { settings: newSettings });
+        onUpdated();
+        onClose();
+      } catch {
+        alert('Erro ao atualizar foto.');
+      } finally {
+        setSaving(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleRemoveCustomPhoto = async () => {
+    setSaving(true);
+    try {
+      const newSettings = { ...(rel.settings || {}) };
+      delete newSettings.custom_photo;
+      await updateRelationship(id, { settings: newSettings });
+      onUpdated();
+      onClose();
+    } catch {
+      alert('Erro ao remover foto customizada.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <motion.div className="modal-content" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}>
+         <h3>Atualizar Foto</h3>
+         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+           Escolha uma foto para representar essa conexão.
+         </p>
+         
+         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <label className="btn-primary-glow" style={{ textAlign: 'center', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+              {saving ? 'Salvando...' : 'Fazer Upload de Nova Foto'}
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileUpload} 
+                style={{ display: 'none' }} 
+                disabled={saving}
+              />
+            </label>
+            
+            {rel.settings?.custom_photo && (
+              <button 
+                className="btn-secondary" 
+                onClick={handleRemoveCustomPhoto}
+                disabled={saving}
+              >
+                Remover Foto Customizada
+              </button>
+            )}
+            
+            {rel.partner_node?.photo_url && (
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '12px', marginTop: '8px' }}>
+                 <p style={{ fontSize: '0.85rem', marginBottom: '8px' }}>O parceiro já definiu uma foto no perfil dele.</p>
+                 <button 
+                   className="btn-secondary" 
+                   onClick={handleRemoveCustomPhoto}
+                   style={{ width: '100%' }}
+                   disabled={saving}
+                 >
+                   Usar Foto do Parceiro
+                 </button>
+              </div>
+            )}
+            
+            <button className="btn-link" onClick={onClose} style={{ marginTop: '8px' }}>Cancelar</button>
+         </div>
       </motion.div>
     </div>
   );

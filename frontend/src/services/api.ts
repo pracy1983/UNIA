@@ -36,6 +36,13 @@ export interface Relationship {
     started_at?: string;
     invite_token?: string;
     is_archived?: boolean;
+    settings?: Record<string, any>;
+    partner_node?: {
+        id: string;
+        name: string;
+        photo_url?: string;
+        owner_id: string;
+    };
 }
 
 export interface WishlistItem {

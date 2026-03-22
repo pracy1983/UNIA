@@ -107,7 +107,23 @@ export const getRelationshipById = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Relationship not found' });
         }
 
-        res.json(result.rows[0]);
+        const relationship = result.rows[0];
+
+        // Buscar partner node para pegar a foto (node diferente do owner da conexão, ou apenas outro membro)
+        const partnerNodeQuery = await query(
+            `SELECT n.id, n.name, n.photo_url, n.owner_id 
+             FROM nodes n
+             JOIN relationship_members rm ON n.id = rm.node_id
+             WHERE rm.relationship_id = $1 AND n.owner_id != $2
+             LIMIT 1`,
+            [id, userId]
+        );
+
+        if (partnerNodeQuery.rowCount && partnerNodeQuery.rowCount > 0) {
+            relationship.partner_node = partnerNodeQuery.rows[0];
+        }
+
+        res.json(relationship);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

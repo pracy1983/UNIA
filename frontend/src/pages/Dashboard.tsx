@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import RelationshipCard from '../components/dashboard/RelationshipCard';
 import { PillWidget, AlertWidget } from '../components/dashboard/DashboardWidgets';
 import { SOSButton } from '../components/dashboard/SOSButton';
-import { createRelationship, CreateRelationshipData } from '../services/api';
+import { createRelationship, getRelationships, CreateRelationshipData } from '../services/api';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getUserData() {
@@ -71,8 +71,8 @@ const Dashboard = () => {
 
   const fetchRelationships = () => {
     setLoadingRel(true);
-    axios.get('/api/dashboard/relationships')
-      .then(r => setRelationships(Array.isArray(r.data) ? r.data : []))
+    getRelationships()
+      .then(data => setRelationships(data))
       .catch(() => setRelationships([]))
       .finally(() => setLoadingRel(false));
   };

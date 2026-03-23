@@ -10,6 +10,10 @@ import relationshipsRoutes from './routes/relationshipsRoutes.js';
 import pillRoutes from './routes/pillRoutes.js';
 import memoryRoutes from './routes/memoryRoutes.js';
 import sosRoutes from './routes/sosRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import personalityRoutes from './routes/personalityRoutes.js';
+import { syncDatabase } from './config/syncDatabase.js';
 dotenv.config();
 // @ts-ignore
 const __dirname = path.resolve();
@@ -25,6 +29,9 @@ app.use('/api/relationships', relationshipsRoutes);
 app.use('/api/pills', pillRoutes);
 app.use('/api/memories', memoryRoutes);
 app.use('/api/sos', sosRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/personality', personalityRoutes);
 // Healthcheck
 app.get('/health', async (req, res) => {
     try {
@@ -42,6 +49,10 @@ if (process.env.NODE_ENV === 'production') {
         res.sendFile(path.join(publicPath, 'index.html'));
     });
 }
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
+    // Executa migrações no startup
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+        await syncDatabase();
+    }
 });

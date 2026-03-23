@@ -57,11 +57,34 @@ export interface WishlistItem {
     created_at: string;
 }
 
+export interface Profile {
+    id: string;
+    email: string;
+    display_name: string;
+    cpf?: string;
+    birth_date?: string;
+    photo_url?: string;
+}
+
 export interface Pill {
     id: string;
     user_id: string;
     mood: string;
     note?: string;
+    created_at: string;
+}
+
+export interface PersonalityQuestion {
+    id: string;
+    question_text: string;
+    category: string;
+}
+
+export interface PersonalityDiscovery {
+    question_id: string;
+    question_text: string;
+    category: string;
+    answer_content: string;
     created_at: string;
 }
 
@@ -112,6 +135,17 @@ export const acceptInvite = async (token: string): Promise<{ relationshipId: str
     return response.data;
 };
 
+// ─── SOS ────────────────────────────────────────────────────────────────────
+export const startMediation = async (relationshipId?: string): Promise<any> => {
+    const response = await api.post('/sos/start', { relationshipId });
+    return response.data;
+};
+
+export const sendMediationMessage = async (sessionId: string, message: string): Promise<any> => {
+    const response = await api.post(`/sos/${sessionId}/message`, { message });
+    return response.data;
+};
+
 // ─── Pílulas ──────────────────────────────────────────────────────────────────
 export const savePill = async (mood: string, note?: string): Promise<Pill> => {
     const response = await api.post('/pills', { mood, note });
@@ -156,6 +190,11 @@ export const getWishlist = async (relationshipId: string): Promise<WishlistItem[
     return Array.isArray(response.data) ? response.data : [];
 };
 
+export const getPersonalWishlist = async (): Promise<WishlistItem[]> => {
+    const response = await api.get('/wishlist/personal');
+    return Array.isArray(response.data) ? response.data : [];
+};
+
 export const addWishlistItem = async (data: Partial<WishlistItem>): Promise<WishlistItem> => {
     const response = await api.post('/wishlist', data);
     return response.data;
@@ -167,6 +206,33 @@ export const deleteWishlistItem = async (id: string): Promise<void> => {
 
 export const updateRelationship = async (id: string, data: any): Promise<Relationship> => {
     const response = await api.put(`/relationships/${id}`, data);
+    return response.data;
+};
+
+// ─── Profile ────────────────────────────────────────────────────────────────
+export const getProfile = async (): Promise<Profile> => {
+    const response = await api.get('/profile');
+    return response.data;
+};
+
+export const updateProfile = async (data: Partial<Profile>): Promise<Profile> => {
+    const response = await api.put('/profile', data);
+    return response.data;
+};
+
+// ─── Personality Profiling ──────────────────────────────────────────────────
+export const getUnansweredQuestions = async (): Promise<PersonalityQuestion[]> => {
+    const response = await api.get('/personality/unanswered');
+    return response.data;
+};
+
+export const submitPersonalityAnswer = async (questionId: string, answerContent: string): Promise<any> => {
+    const response = await api.post('/personality/answers', { questionId, answerContent });
+    return response.data;
+};
+
+export const getDiscoveries = async (): Promise<PersonalityDiscovery[]> => {
+    const response = await api.get('/personality/discoveries');
     return response.data;
 };
 

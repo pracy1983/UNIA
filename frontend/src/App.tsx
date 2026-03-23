@@ -5,9 +5,10 @@ import Dashboard from './pages/Dashboard';
 import OnboardingPage from './pages/OnboardingPage';
 import RelationshipDetail from './pages/RelationshipDetail';
 import InvitePage from './pages/InvitePage';
+import Profile from './pages/Profile';
 
 // Simple Protected Route Component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const token = localStorage.getItem('token');
   if (!token) {
     return <Navigate to="/login" replace />;
@@ -55,27 +56,33 @@ export default function App() {
         } />
         
         <Route path="/dashboard" element={
-          <ProtectedRoute>
+          <PrivateRoute>
             <Dashboard />
-          </ProtectedRoute>
+          </PrivateRoute>
         } />
 
         <Route path="/onboarding" element={
-          <ProtectedRoute>
+          <PrivateRoute>
             <OnboardingPage />
-          </ProtectedRoute>
+          </PrivateRoute>
         } />
 
         <Route path="/relationship/:id" element={
-          <ProtectedRoute>
+          <PrivateRoute>
             <RelationshipDetail />
-          </ProtectedRoute>
+          </PrivateRoute>
+        } />
+
+        <Route path="/profile" element={
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
         } />
 
         <Route path="/invite/:token" element={
-          <ProtectedRoute>
+          <PrivateRoute>
             <InvitePage />
-          </ProtectedRoute>
+          </PrivateRoute>
         } />
 
         {/* Default route */}

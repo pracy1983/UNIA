@@ -145,6 +145,11 @@ export interface SOSResponse {
     advice: string[];
 }
 
+export const triggerSOS = async (relationshipId?: string, message?: string): Promise<SOSResponse> => {
+    const response = await api.post('/sos', { relationshipId, message });
+    return response.data;
+};
+
 // ─── Wishlist ───────────────────────────────────────────────────────────────
 export const getWishlist = async (relationshipId: string): Promise<WishlistItem[]> => {
     const response = await api.get(`/wishlist/${relationshipId}`);

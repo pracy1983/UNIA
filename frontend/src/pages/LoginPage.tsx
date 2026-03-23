@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Calendar, IdCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { formatCPF, validateCPF } from '../utils/validation';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -16,10 +17,24 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value);
+    setCpf(formatted);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Validação extra para registro
+    if (!isLogin) {
+      if (!validateCPF(cpf)) {
+        setError('CPF inválido. Verifique os números.');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
@@ -42,8 +57,8 @@ const LoginPage = () => {
   return (
     <div className="auth-page">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         className="auth-card"
       >
         <div className="auth-header">
@@ -73,7 +88,7 @@ const LoginPage = () => {
                   <User size={18} className="input-icon" />
                   <input
                     type="text"
-                    placeholder="Seu Nome Real (para faturamento)"
+                    placeholder="Seu Nome Real (obrigatório)"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="input-field"
@@ -93,19 +108,19 @@ const LoginPage = () => {
                 </div>
 
                 <div className="input-group">
-                  <Lock size={18} className="input-icon" />
+                  <IdCard size={18} className="input-icon" />
                   <input
                     type="text"
                     placeholder="CPF (obrigatório)"
                     value={cpf}
-                    onChange={(e) => setCpf(e.target.value)}
+                    onChange={handleCpfChange}
                     className="input-field"
                     required
                   />
                 </div>
 
                 <div className="input-group">
-                  <ArrowRight size={18} className="input-icon" />
+                  <Calendar size={18} className="input-icon" />
                   <input
                     type="date"
                     placeholder="Data de Nascimento"
@@ -145,15 +160,17 @@ const LoginPage = () => {
 
           {error && (
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
               className="error-message"
+              style={{ color: '#ff3b30' }}
             >
               {error}
             </motion.p>
           )}
 
           <button
+            type="submit"
             className="btn-primary btn-full"
             disabled={loading}
           >

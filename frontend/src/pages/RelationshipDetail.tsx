@@ -488,45 +488,69 @@ const PhotoUpdateModal = ({ id, rel, onClose, onUpdated }: any) => {
       <AnimatePresence>
         {showCropper && (
           <motion.div 
+            className="modal-overlay"
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', flexDirection: 'column' }}
+            style={{ zIndex: 3000 }}
           >
-            <div style={{ position: 'relative', flex: 1 }}>
-              {imageToCrop && (
-                <Cropper
-                  image={imageToCrop}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  onCropChange={setCrop}
-                  onCropComplete={onCropComplete}
-                  onZoomChange={setZoom}
-                  cropShape="round"
-                  showGrid={false}
-                />
-              )}
-            </div>
-            <div style={{ padding: '24px', background: 'var(--card-bg)', display: 'flex', gap: '16px', justifyContent: 'center' }}>
-              <button 
-                type="button" 
-                onClick={() => setShowCropper(false)} 
-                className="btn-secondary" 
-                style={{ minWidth: '120px' }}
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button" 
-                onClick={handleCropSave} 
-                className="btn-primary-glow" 
-                style={{ minWidth: '120px' }}
-                disabled={saving}
-              >
-                {saving ? 'Salvando...' : 'Cortar e Usar'}
-              </button>
-            </div>
+            <motion.div 
+              className="modal-content"
+              style={{ maxWidth: '600px', height: '80vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+            >
+              <div style={{ position: 'relative', flex: 1, background: '#000' }}>
+                {imageToCrop && (
+                  <Cropper
+                    image={imageToCrop}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={1}
+                    onCropChange={setCrop}
+                    onCropComplete={onCropComplete}
+                    onZoomChange={setZoom}
+                    cropShape="round"
+                    showGrid={false}
+                  />
+                )}
+              </div>
+              
+              <div className="cropper-controls">
+                <div className="zoom-slider-container">
+                  <span style={{ fontSize: '0.8rem' }}>Zoom</span>
+                  <input 
+                    type="range" 
+                    min={1} 
+                    max={3} 
+                    step={0.1} 
+                    value={zoom} 
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="zoom-slider"
+                  />
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCropper(false)} 
+                    className="btn-secondary" 
+                    style={{ flex: 1 }}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleCropSave} 
+                    className="btn-primary-glow" 
+                    style={{ flex: 1 }}
+                    disabled={saving}
+                  >
+                    {saving ? 'Salvando...' : 'Cortar e Usar'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

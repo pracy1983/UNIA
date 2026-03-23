@@ -2,18 +2,25 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
+import { validateCPF } from '../utils/validation.js';
 
 export const register = async (req: Request, res: Response) => {
   const { email, password, displayName, fullName, cpf, birthDate } = req.body;
 
-  if (!cpf || !birthDate || !fullName) {
-    return res.status(400).json({ message: 'Todos os campos são obrigatórios (Nome Real, CPF e Nascimento)' });
+  if (!cpf || !birthDate || !fullName || !email || !password) {
+    return res.status(400).json({ message: 'Todos os campos são obrigatórios (Nome Real, CPF, Nascimento, E-mail e Senha)' });
+  }
+
+  // Validação de CPF
+  if (!validateCPF(cpf)) {
+    return res.status(400).json({ message: 'CPF inválido. Verifique os números.' });
   }
 
   try {
-    const userCheck = await query('SELECT id FROM users WHERE email = $1', [email]);
+    // Check if email or CPF already exists
+    const userCheck = await query('SELECT id FROM users WHERE email = $1 OR cpf = $2', [email, cpf]);
     if (userCheck.rowCount && userCheck.rowCount > 0) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'E-mail ou CPF já cadastrado.' });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -40,7 +47,7 @@ export const register = async (req: Request, res: Response) => {
     res.status(201).json({ user: newUser, token });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Erro interno ao criar conta.' });
   }
 };
 
@@ -50,13 +57,13 @@ export const login = async (req: Request, res: Response) => {
   try {
     const result = await query('SELECT * FROM users WHERE email = $1', [email]);
     if (!result.rowCount || result.rowCount === 0) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Credenciais inválidas' });
     }
 
     const user = result.rows[0];
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Credenciais inválidas' });
     }
 
     const token = jwt.sign(
@@ -75,6 +82,6 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Erro interno ao fazer login.' });
   }
 };

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.js';
 import { query } from '../config/database.js';
+import { validateCPF } from '../utils/validation.js';
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -34,13 +35,24 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     }
 
     try {
-        // Check if CPF is already set
+        // Fetch current profile to check CPF status
         const userRes = await query('SELECT cpf FROM users WHERE id = $1', [userId]);
         const existingCpf = userRes.rows[0]?.cpf;
 
-        // If CPF is being updated but already exists, block it
-        if (existingCpf && cpf && existingCpf !== cpf) {
-            return res.status(400).json({ message: 'CPF cannot be changed once set' });
+        // Validation for new CPF if provided
+        if (cpf) {
+            const cleanNewCpf = cpf.replace(/[^\d]/g, '');
+            const cleanExistingCpf = existingCpf ? existingCpf.replace(/[^\d]/g, '') : '';
+
+            // If CPF is already set (non-empty), block changes if different
+            if (cleanExistingCpf && cleanExistingCpf !== '' && cleanNewCpf !== cleanExistingCpf) {
+                return res.status(400).json({ message: 'O CPF não pode ser alterado após definido.' });
+            }
+
+            // Validate CPF format/digits
+            if (!validateCPF(cpf)) {
+                return res.status(400).json({ message: 'CPF inválido. Verifique os dígitos.' });
+            }
         }
 
         const result = await query(
@@ -57,18 +69,20 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         );
 
         // Update the owner's node name and photo_url if setting from Profile
-        await query(
-            `UPDATE nodes SET name = $1, photo_url = $2 WHERE owner_id = $3 AND type = 'solo'`,
-            [display_name, photo_url, userId]
-        );
+        if (display_name || photo_url) {
+            await query(
+                `UPDATE nodes SET name = COALESCE($1, name), photo_url = COALESCE($2, photo_url) WHERE owner_id = $3 AND type = 'solo'`,
+                [display_name, photo_url, userId]
+            );
+        }
 
         res.json(result.rows[0]);
     } catch (err) {
         console.error('Error updating profile:', err);
         // Supabase error codes for duplicate key violation
         if ((err as any).code === '23505') {
-             return res.status(400).json({ message: 'CPF or Email already in use' });
+             return res.status(400).json({ message: 'CPF ou E-mail já em uso por outro usuário.' });
         }
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Erro interno ao atualizar perfil.' });
     }
 };

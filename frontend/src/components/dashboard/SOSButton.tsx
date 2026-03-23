@@ -54,8 +54,18 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ relationshipId }) => {
     try {
       const res = await sendMediationMessage(sessionId, newMessage.content);
       setChatHistory(res.chatHistory);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
+      const errMsg = error.response?.data?.details || error.message || 'Erro ao enviar mensagem.';
+      
+      // Remove o "Pensando..." ou apenas adiciona o erro
+      setChatHistory(prev => [
+        ...prev, 
+        { 
+          role: 'assistant', 
+          content: `Ops! Houve um problema ao processar sua mensagem: ${errMsg}. Por favor, tente novamente em instantes.` 
+        }
+      ]);
     } finally {
       setLoading(false);
     }

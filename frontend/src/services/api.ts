@@ -143,6 +143,9 @@ export const startMediation = async (relationshipId?: string): Promise<any> => {
 };
 
 export const sendMediationMessage = async (sessionId: string, message: string): Promise<any> => {
+    if (!sessionId || sessionId === 'undefined') {
+        throw new Error('ID da sessão de SOS não encontrado. Tente reiniciar a mediação.');
+    }
     const response = await api.post(`/sos/${sessionId}/message`, { message });
     return response.data;
 };

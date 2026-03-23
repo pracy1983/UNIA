@@ -4,6 +4,7 @@
 ALTER TABLE users ADD COLUMN IF NOT EXISTS cpf TEXT UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;
 
 -- 2. Personality Profiling Tables
 CREATE TABLE IF NOT EXISTS personality_questions (
@@ -34,6 +35,8 @@ CREATE TABLE IF NOT EXISTS personality_answers (
     question_id UUID NOT NULL REFERENCES personality_questions(id) ON DELETE CASCADE,
     answer_content TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, question_id)
+);
 
 -- 3. SOS Chat Support
 ALTER TABLE sos_sessions ADD COLUMN IF NOT EXISTS chat_history JSONB DEFAULT '[]';

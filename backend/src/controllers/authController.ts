@@ -4,7 +4,11 @@ import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
 
 export const register = async (req: Request, res: Response) => {
-  const { email, password, displayName } = req.body;
+  const { email, password, displayName, fullName, cpf, birthDate } = req.body;
+
+  if (!cpf || !birthDate || !fullName) {
+    return res.status(400).json({ message: 'Todos os campos são obrigatórios (Nome Real, CPF e Nascimento)' });
+  }
 
   try {
     const userCheck = await query('SELECT id FROM users WHERE email = $1', [email]);
@@ -16,8 +20,8 @@ export const register = async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     const result = await query(
-      'INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name',
-      [email, passwordHash, displayName]
+      'INSERT INTO users (email, password_hash, display_name, full_name, cpf, birth_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, display_name, full_name, cpf, birth_date',
+      [email, passwordHash, displayName || fullName, fullName, cpf, birthDate]
     );
 
     // Create a default Solo node for the user

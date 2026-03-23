@@ -61,6 +61,7 @@ export interface Profile {
     id: string;
     email: string;
     display_name: string;
+    full_name?: string;
     cpf?: string;
     birth_date?: string;
     photo_url?: string;

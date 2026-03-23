@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Plus, X, Clock, Trash2, Archive,
   Camera, Link as LinkIcon, MessageCircle, Edit3
@@ -20,6 +20,8 @@ import {
   WishlistItem
 } from '../services/api';
 import { SOSButton } from '../components/dashboard/SOSButton';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '../utils/canvasUtils';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const TYPE_LABELS: Record<string, string> = {
@@ -378,34 +380,44 @@ const StatusUpdateModal = ({ id, currentType, onClose, onUpdated }: any) => {
 
 const PhotoUpdateModal = ({ id, rel, onClose, onUpdated }: any) => {
   const [saving, setSaving] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   
   const handleFileUpload = (e: any) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 2MB.');
-      return;
-    }
-
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result;
-      if (!base64) return;
-      
-      setSaving(true);
-      try {
-        const newSettings = { ...(rel.settings || {}), custom_photo: base64 };
-        await updateRelationship(id, { settings: newSettings });
-        onUpdated();
-        onClose();
-      } catch {
-        alert('Erro ao atualizar foto.');
-      } finally {
-        setSaving(false);
-      }
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setShowCropper(true);
     };
     reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = (_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropSave = async () => {
+    if (!imageToCrop || !croppedAreaPixels) return;
+    setSaving(true);
+    try {
+      const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels);
+      const newSettings = { ...(rel.settings || {}), custom_photo: croppedImage };
+      await updateRelationship(id, { settings: newSettings });
+      onUpdated();
+      setShowCropper(false);
+      onClose();
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao processar imagem.');
+    } finally {
+      setSaving(false);
+    }
   };
   
   const handleRemoveCustomPhoto = async () => {
@@ -424,9 +436,10 @@ const PhotoUpdateModal = ({ id, rel, onClose, onUpdated }: any) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <motion.div className="modal-content" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}>
-         <h3>Atualizar Foto</h3>
+    <>
+      <div className="modal-overlay" onClick={onClose}>
+        <motion.div className="modal-content" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}>
+           <h3>Atualizar Foto</h3>
          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
            Escolha uma foto para representar essa conexão.
          </p>
@@ -469,8 +482,55 @@ const PhotoUpdateModal = ({ id, rel, onClose, onUpdated }: any) => {
             
             <button className="btn-link" onClick={onClose} style={{ marginTop: '8px' }}>Cancelar</button>
          </div>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+
+      <AnimatePresence>
+        {showCropper && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', flexDirection: 'column' }}
+          >
+            <div style={{ position: 'relative', flex: 1 }}>
+              {imageToCrop && (
+                <Cropper
+                  image={imageToCrop}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                  cropShape="round"
+                  showGrid={false}
+                />
+              )}
+            </div>
+            <div style={{ padding: '24px', background: 'var(--card-bg)', display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowCropper(false)} 
+                className="btn-secondary" 
+                style={{ minWidth: '120px' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                onClick={handleCropSave} 
+                className="btn-primary-glow" 
+                style={{ minWidth: '120px' }}
+                disabled={saving}
+              >
+                {saving ? 'Salvando...' : 'Cortar e Usar'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

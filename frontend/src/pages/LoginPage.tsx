@@ -10,6 +10,9 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,7 +23,9 @@ const LoginPage = () => {
 
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
-      const payload = isLogin ? { email, password } : { email, password, displayName };
+      const payload = isLogin 
+        ? { email, password } 
+        : { email, password, displayName, fullName, cpf, birthDate };
       const response = await api.post(endpoint, payload);
 
       localStorage.setItem('token', response.data.token);
@@ -58,20 +63,58 @@ const LoginPage = () => {
           <AnimatePresence mode="wait">
             {!isLogin && (
               <motion.div
+                key="register-fields"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="input-group"
+                style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}
               >
-                <User size={18} className="input-icon" />
-                <input
-                  type="text"
-                  placeholder="Seu Nome"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="input-field"
-                  required
-                />
+                <div className="input-group">
+                  <User size={18} className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="Seu Nome Real (para faturamento)"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <User size={18} className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="Nome Social / Apelido"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+
+                <div className="input-group">
+                  <Lock size={18} className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="CPF (obrigatório)"
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <ArrowRight size={18} className="input-icon" />
+                  <input
+                    type="date"
+                    placeholder="Data de Nascimento"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

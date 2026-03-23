@@ -10,7 +10,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     try {
         const result = await query(
-            'SELECT id, email, display_name, cpf, birth_date, photo_url FROM users WHERE id = $1',
+            'SELECT id, email, display_name, full_name, cpf, birth_date, photo_url FROM users WHERE id = $1',
             [userId]
         );
 
@@ -27,27 +27,33 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
-    const { display_name, email, cpf, birth_date, photo_url } = req.body;
+    const { display_name, email, full_name, cpf, birth_date, photo_url } = req.body;
 
     if (!userId) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    if (!cpf) {
-        return res.status(400).json({ message: 'CPF is required' });
-    }
-
     try {
+        // Check if CPF is already set
+        const userRes = await query('SELECT cpf FROM users WHERE id = $1', [userId]);
+        const existingCpf = userRes.rows[0]?.cpf;
+
+        // If CPF is being updated but already exists, block it
+        if (existingCpf && cpf && existingCpf !== cpf) {
+            return res.status(400).json({ message: 'CPF cannot be changed once set' });
+        }
+
         const result = await query(
             `UPDATE users 
              SET display_name = COALESCE($1, display_name),
                  email = COALESCE($2, email),
-                 cpf = COALESCE($3, cpf),
-                 birth_date = COALESCE($4, birth_date),
-                 photo_url = COALESCE($5, photo_url)
-             WHERE id = $6
-             RETURNING id, email, display_name, cpf, birth_date, photo_url`,
-            [display_name, email, cpf, birth_date, photo_url, userId]
+                 full_name = COALESCE($3, full_name),
+                 cpf = COALESCE($4, cpf),
+                 birth_date = COALESCE($5, birth_date),
+                 photo_url = COALESCE($6, photo_url)
+             WHERE id = $7
+             RETURNING id, email, display_name, full_name, cpf, birth_date, photo_url`,
+            [display_name, email, full_name, cpf, birth_date, photo_url, userId]
         );
 
         // Update the owner's node name and photo_url if setting from Profile

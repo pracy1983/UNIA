@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Camera, User, Save, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getProfile, updateProfile, Profile as ProfileType } from '../services/api';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '../utils/canvasUtils';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -10,6 +12,11 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -34,19 +41,29 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 2MB.');
-      return;
-    }
-
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        setProfile({ ...profile, photo_url: base64 });
-      }
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setShowCropper(true);
     };
     reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = (_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropSave = async () => {
+    if (!imageToCrop || !croppedAreaPixels) return;
+    try {
+      const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels);
+      setProfile({ ...profile, photo_url: croppedImage });
+      setShowCropper(false);
+      setImageToCrop(null);
+    } catch (e) {
+      console.error(e);
+      setError('Erro ao processar imagem.');
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -109,8 +126,13 @@ export default function Profile() {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nome Completo</label>
-            <input type="text" name="display_name" value={profile.display_name || ''} onChange={handleChange} className="login-input" placeholder="Seu nome" required />
+            <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nome Social / Apelido</label>
+            <input type="text" name="display_name" value={profile.display_name || ''} onChange={handleChange} className="login-input" placeholder="Como quer ser chamado" required />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nome Completo (Real)</label>
+            <input type="text" name="full_name" value={profile.full_name || ''} onChange={handleChange} className="login-input" placeholder="Seu nome completo" required />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -120,7 +142,18 @@ export default function Profile() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>CPF <span style={{ color: '#ef4444' }}>*</span></label>
-            <input type="text" name="cpf" value={profile.cpf || ''} onChange={handleChange} className="login-input" placeholder="000.000.000-00" required />
+            <input 
+              type="text" 
+              name="cpf" 
+              value={profile.cpf || ''} 
+              onChange={handleChange} 
+              className="login-input" 
+              placeholder="000.000.000-00" 
+              required 
+              disabled={!!profile.cpf && profile.cpf !== ''}
+              style={profile.cpf ? { opacity: 0.7, background: 'rgba(255,255,255,0.05)' } : {}}
+            />
+            {profile.cpf && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>O CPF não pode ser alterado após definido.</span>}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -133,6 +166,52 @@ export default function Profile() {
           </button>
         </form>
       </motion.div>
+
+      {/* Cropper Modal */}
+      <AnimatePresence>
+        {showCropper && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 2000, display: 'flex', flexDirection: 'column' }}
+          >
+            <div style={{ position: 'relative', flex: 1 }}>
+              {imageToCrop && (
+                <Cropper
+                  image={imageToCrop}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                  cropShape="round"
+                  showGrid={false}
+                />
+              )}
+            </div>
+            <div style={{ padding: '24px', background: 'var(--card-bg)', display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowCropper(false)} 
+                className="btn-secondary" 
+                style={{ minWidth: '120px' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                onClick={handleCropSave} 
+                className="btn-primary-glow" 
+                style={{ minWidth: '120px' }}
+              >
+                Cortar e Usar
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

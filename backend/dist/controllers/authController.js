@@ -2,7 +2,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
 export const register = async (req, res) => {
-    const { email, password, displayName } = req.body;
+    const { email, password, displayName, fullName, cpf, birthDate } = req.body;
+    if (!cpf || !birthDate || !fullName) {
+        return res.status(400).json({ message: 'Todos os campos são obrigatórios (Nome Real, CPF e Nascimento)' });
+    }
     try {
         const userCheck = await query('SELECT id FROM users WHERE email = $1', [email]);
         if (userCheck.rowCount && userCheck.rowCount > 0) {
@@ -10,7 +13,7 @@ export const register = async (req, res) => {
         }
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
-        const result = await query('INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name', [email, passwordHash, displayName]);
+        const result = await query('INSERT INTO users (email, password_hash, display_name, full_name, cpf, birth_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, display_name, full_name, cpf, birth_date', [email, passwordHash, displayName || fullName, fullName, cpf, birthDate]);
         // Create a default Solo node for the user
         const newUser = result.rows[0];
         await query('INSERT INTO nodes (owner_id, name, type) VALUES ($1, $2, $3)', [newUser.id, 'Meu Cantinho', 'solo']);

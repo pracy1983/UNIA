@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1';
+const DEEPSEEK_API_URL = 'https://api.deepseek.com';
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
 /**
@@ -12,7 +12,8 @@ const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 export const deepseekService = {
   async chat(messages: any[]) {
     if (!DEEPSEEK_API_KEY) {
-      throw new Error('DEEPSEEK_API_KEY is not configured');
+      console.error('CRITICAL: DEEPSEEK_API_KEY is missing from environment variables.');
+      throw new Error('Configuração de IA ausente (API Key).');
     }
 
     try {
@@ -31,12 +32,18 @@ export const deepseekService = {
         }
       );
 
+      if (!response.data?.choices?.[0]?.message) {
+        throw new Error('Resposta da IA em formato inválido.');
+      }
+
       return response.data.choices[0].message;
     } catch (error: any) {
-      console.error('DeepSeek API Error:', error.response?.data || error.message);
+      const errorMsg = error.response?.data?.error?.message || error.message;
+      console.error('DeepSeek API Error:', errorMsg);
       throw error;
     }
   },
+
 
   async analyzeRelationship(pills: any[], memories: any[]) {
     const prompt = `

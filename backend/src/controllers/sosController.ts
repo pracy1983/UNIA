@@ -54,35 +54,51 @@ export const sendMediationMessage = async (req: AuthRequest, res: Response) => {
         }
 
         const session = sessionRes.rows[0];
-        const chatHistory = session.chat_history || [];
+        
+        // Garantir que chatHistory seja um array (tratando se vier como string do DB)
+        let chatHistory = session.chat_history;
+        if (typeof chatHistory === 'string') {
+            try {
+                chatHistory = JSON.parse(chatHistory);
+            } catch (e) {
+                chatHistory = [];
+            }
+        }
+        if (!Array.isArray(chatHistory)) {
+            chatHistory = [];
+        }
 
         // Adicionar a mensagem do usuário
         chatHistory.push({ role: 'user', content: message });
 
-        // Montar Contexto
+        // Montar Contexto posterior
         let contextStr = "Contexto: O usuário está precisando de mediação ou conselho.";
         
-        // Contexto de Personalidade
-        const discovRes = await query(
-            `    SELECT q.question_text, a.answer_content
-                 FROM personality_answers a
-                 JOIN personality_questions q ON a.question_id = q.id
-                 WHERE a.user_id = $1`,
-            [userId]
-        );
-        if (discovRes.rowCount && discovRes.rowCount > 0) {
-            contextStr += "\\n\\nPerfil Psicológico do Usuário:";
-            discovRes.rows.forEach(r => {
-                contextStr += `\\n- Pergunta: "${r.question_text}" | Resposta: "${r.answer_content}"`;
-            });
-        }
-
-        // Contexto de Relacionamento
-        if (session.relationship_id) {
-            const relRes = await query('SELECT title, type FROM relationships WHERE id = $1', [session.relationship_id]);
-            if (relRes.rowCount && relRes.rowCount > 0) {
-                contextStr += `\\n\\nRelacionamento Atual em Foco: ${relRes.rows[0].title} (${relRes.rows[0].type})`;
+        try {
+            // Contexto de Personalidade
+            const discovRes = await query(
+                `    SELECT q.question_text, a.answer_content
+                     FROM personality_answers a
+                     JOIN personality_questions q ON a.question_id = q.id
+                     WHERE a.user_id = $1`,
+                [userId]
+            );
+            if (discovRes.rowCount && discovRes.rowCount > 0) {
+                contextStr += "\n\nPerfil Psicológico do Usuário:";
+                discovRes.rows.forEach(r => {
+                    contextStr += `\n- Pergunta: "${r.question_text}" | Resposta: "${r.answer_content}"`;
+                });
             }
+
+            // Contexto de Relacionamento
+            if (session.relationship_id) {
+                const relRes = await query('SELECT title, type FROM relationships WHERE id = $1', [session.relationship_id]);
+                if (relRes.rowCount && relRes.rowCount > 0) {
+                    contextStr += `\n\nRelacionamento Atual em Foco: ${relRes.rows[0].title} (${relRes.rows[0].type})`;
+                }
+            }
+        } catch (ctxErr) {
+            console.warn('Error fetching context for mediation, proceeding without it:', ctxErr);
         }
 
         const systemPrompt = `
@@ -93,16 +109,15 @@ Regras de Ouro:
 1. Entenda as emoções do usuário, seja extremamente acolhedor e seguro.
 2. Ajude a baixar a guarda e buscar soluções lógicas, nunca incentivando o ataque mútuo.
 3. Leve o usuário a reflexões justas e coerentes fazendo perguntas estratégicas, uma de cada vez.
-4. Use o "Perfil Psicológico do Usuário" (quando disponível) para entender de onde as dores estão vindo e aconselhar de maneira personalizada (ex: se a pessoa disse que a linguagem do amor é X, aborde sob esse prisma).
-5. Respostas devem ser curtas, muito naturais e parecidas com chat online, NADA de respostas mecânicas ou divididas em muitos pontos secos - você é humano e atencioso.
+4. Use o "Perfil Psicológico do Usuário" (quando disponível) para entender de onde as dores estão vindo e aconselhar de maneira personalizada.
+5. Respostas devem ser curtas, muito naturais e parecidas com chat online, NADA de respostas mecânicas.
 
 ${contextStr}
         `;
 
-        // Prepara mensagens para Envio no Formato OpenAI/DeepSeek
         const messagesToSend = [
             { role: 'system', content: systemPrompt },
-            ...chatHistory // Enviamos o histórico inteiro para a IA ter o contexto da conversa
+            ...chatHistory
         ];
 
         // Chamar IA
@@ -122,8 +137,13 @@ ${contextStr}
             response: aiResponse.content,
             chatHistory
         });
-    } catch (err) {
-        console.error('Error sending mediation message:', err);
-        res.status(500).json({ message: 'Server error' });
+    } catch (err: any) {
+        console.error('Error sending mediation message:', err.message || err);
+        const errorDetail = err.response?.data?.error?.message || err.message || 'Erro desconhecido';
+        res.status(500).json({ 
+            message: 'Erro ao processar mediação.',
+            details: errorDetail
+        });
     }
 };
+

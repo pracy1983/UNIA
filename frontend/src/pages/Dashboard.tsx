@@ -291,7 +291,7 @@ const Dashboard = () => {
              ) : (
                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                  {discoveries.map((item, i) => (
-                   <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px' }}>
+                   <div key={i} style={{ background: 'rgba(15, 18, 35, 0.65)', border: '1px solid rgba(255, 126, 95, 0.25)', borderRadius: '16px', padding: '20px' }}>
                      <div style={{ display: 'inline-block', padding: '4px 10px', background: 'rgba(255,126,95,0.1)', color: '#FF7E5F', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, marginBottom: '12px' }}>
                        {item.category}
                      </div>

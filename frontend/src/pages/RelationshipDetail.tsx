@@ -58,7 +58,7 @@ const TimelineItem = ({ memory, index }: { memory: Memory; index: number }) => (
     </div>
 
     <div style={{
-      flex: 1, background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.08)',
+      flex: 1, background: 'rgba(15, 18, 35, 0.65)', border: '1px solid rgba(255, 255, 255, 0.12)',
       borderRadius: '14px', padding: '14px 16px', marginBottom: '16px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
@@ -267,7 +267,7 @@ const RelationshipDetail = () => {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px' }}>Opções da Conexão</h2>
              
-             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', padding: '24px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+             <div style={{ background: 'rgba(15, 18, 35, 0.65)', borderRadius: '24px', padding: '24px', marginBottom: '24px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>Cultivar Conexão</h3>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
@@ -467,7 +467,7 @@ const PhotoUpdateModal = ({ id, rel, onClose, onUpdated }: any) => {
             )}
             
             {rel.partner_node?.photo_url && (
-              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '12px', marginTop: '8px' }}>
+              <div style={{ background: 'rgba(15, 18, 35, 0.6)', padding: '12px', borderRadius: '12px', marginTop: '8px' }}>
                  <p style={{ fontSize: '0.85rem', marginBottom: '8px' }}>O parceiro já definiu uma foto no perfil dele.</p>
                  <button 
                    className="btn-secondary" 

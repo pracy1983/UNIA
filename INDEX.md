@@ -14,3 +14,4 @@ Plataforma completa de PRM (Personal Relationship Management) focada em organiza
 - [TASKS.md](TASKS.md) - Lista de Tarefas
 - [RULES.md](RULES.md) - Regras do Projeto
 - [WORKFLOW.md](WORKFLOW.md) - Fluxos de trabalho
+- [GEMINI.md](GEMINI.md) - Regras da IA (Kit Antigravity)

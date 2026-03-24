@@ -24,3 +24,4 @@ Criar o "Copiloto Definitivo de Relacionamentos" com foco em organização, mem�
 - **Easypanel**: Deploy automático via branch `main` no GitHub.
 - **Workflow**: `git push origin main` -> Auto build & deploy.
 - **Healthcheck**: Monitorado em `https://unia.vrdncy.easypanel.host/health`.
+- **AI Engine**: Kit Antigravity integrado (.agent + GEMINI.md).

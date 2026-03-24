@@ -1,43 +1,176 @@
 ---
-description: deploy da aplicação UNIA após qualquer alteração de código
+description: Deployment command for production releases. Pre-flight checks and deployment execution.
 ---
 
-# Workflow: Deploy UNIA (Easypanel via GitHub)
+# /deploy - Production Deployment
 
-## Como funciona
-O Easypanel monitora o branch `main` do repositório GitHub.
-**Toda vez que há push na `main`, o Easypanel automaticamente:**
-1. Detecta a mudança
-2. Clona o repositório atualizado
-3. Executa o `Dockerfile` (build frontend + backend)
-4. Substitui o container em produção pelo novo
+$ARGUMENTS
 
-## Passos obrigatórios após QUALQUER alteração
+---
 
-// turbo-all
+## Purpose
 
-1. Adicionar todas as alterações ao staging
-```bash
-git add -A
+This command handles production deployment with pre-flight checks, deployment execution, and verification.
+
+---
+
+## Sub-commands
+
+```
+/deploy            - Interactive deployment wizard
+/deploy check      - Run pre-deployment checks only
+/deploy preview    - Deploy to preview/staging
+/deploy production - Deploy to production
+/deploy rollback   - Rollback to previous version
 ```
 
-2. Commitar com mensagem descritiva
-```bash
-git commit -m "feat/fix/style: <descrição clara da mudança>"
+---
+
+## Pre-Deployment Checklist
+
+Before any deployment:
+
+```markdown
+## 🚀 Pre-Deploy Checklist
+
+### Code Quality
+- [ ] No TypeScript errors (`npx tsc --noEmit`)
+- [ ] ESLint passing (`npx eslint .`)
+- [ ] All tests passing (`npm test`)
+
+### Security
+- [ ] No hardcoded secrets
+- [ ] Environment variables documented
+- [ ] Dependencies audited (`npm audit`)
+
+### Performance
+- [ ] Bundle size acceptable
+- [ ] No console.log statements
+- [ ] Images optimized
+
+### Documentation
+- [ ] README updated
+- [ ] CHANGELOG updated
+- [ ] API docs current
+
+### Ready to deploy? (y/n)
 ```
 
-3. Enviar para o repositório remoto (dispara deploy automático)
-```bash
-git push origin main
+---
+
+## Deployment Flow
+
+```
+┌─────────────────┐
+│  /deploy        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Pre-flight     │
+│  checks         │
+└────────┬────────┘
+         │
+    Pass? ──No──► Fix issues
+         │
+        Yes
+         │
+         ▼
+┌─────────────────┐
+│  Build          │
+│  application    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Deploy to      │
+│  platform       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Health check   │
+│  & verify       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  ✅ Complete    │
+└─────────────────┘
 ```
 
-4. Verificar o healthcheck em produção (aguardar ~2-3 min para o build)
-```
-https://unia.vrdncy.easypanel.host/health
+---
+
+## Output Format
+
+### Successful Deploy
+
+```markdown
+## 🚀 Deployment Complete
+
+### Summary
+- **Version:** v1.2.3
+- **Environment:** production
+- **Duration:** 47 seconds
+- **Platform:** Vercel
+
+### URLs
+- 🌐 Production: https://app.example.com
+- 📊 Dashboard: https://vercel.com/project
+
+### What Changed
+- Added user profile feature
+- Fixed login bug
+- Updated dependencies
+
+### Health Check
+✅ API responding (200 OK)
+✅ Database connected
+✅ All services healthy
 ```
 
-## Regras
-- Nunca faça apenas commit sem push — o deploy não será triggado
-- Mensagens de commit devem descrever o que mudou (feat, fix, style, refactor, docs)
-- JAMAIS fazer merge sem autorização explícita do usuário
-- Em caso de erro no deploy, checar logs no painel do Easypanel
+### Failed Deploy
+
+```markdown
+## ❌ Deployment Failed
+
+### Error
+Build failed at step: TypeScript compilation
+
+### Details
+```
+error TS2345: Argument of type 'string' is not assignable...
+```
+
+### Resolution
+1. Fix TypeScript error in `src/services/user.ts:45`
+2. Run `npm run build` locally to verify
+3. Try `/deploy` again
+
+### Rollback Available
+Previous version (v1.2.2) is still active.
+Run `/deploy rollback` if needed.
+```
+
+---
+
+## Platform Support
+
+| Platform | Command | Notes |
+|----------|---------|-------|
+| Vercel | `vercel --prod` | Auto-detected for Next.js |
+| Railway | `railway up` | Needs Railway CLI |
+| Fly.io | `fly deploy` | Needs flyctl |
+| Docker | `docker compose up -d` | For self-hosted |
+
+---
+
+## Examples
+
+```
+/deploy
+/deploy check
+/deploy preview
+/deploy production --skip-tests
+/deploy rollback
+```

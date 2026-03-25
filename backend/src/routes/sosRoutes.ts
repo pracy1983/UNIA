@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { triggerSOS } from '../controllers/sosController.js';
+import { startMediation, sendMediationMessage } from '../controllers/sosController.js';
 import { authMiddleware } from '../middlewares/auth.js';
 
 const router = Router();
 
-router.post('/trigger', authMiddleware, triggerSOS);
+router.post('/start', authMiddleware, startMediation);
+router.post('/:sessionId/message', authMiddleware, sendMediationMessage);
 
 export default router;

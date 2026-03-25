@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, X, Sparkles } from 'lucide-react';
-import { triggerSOS } from '../../services/api';
+import { AlertCircle, X, Sparkles, Send } from 'lucide-react';
+import { startMediation, sendMediationMessage } from '../../services/api';
 
 interface SOSButtonProps {
   relationshipId?: string;
@@ -9,9 +9,10 @@ interface SOSButtonProps {
 
 export const SOSButton: React.FC<SOSButtonProps> = ({ relationshipId }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [step, setStep] = useState<'breathe' | 'input' | 'advice'>('breathe');
+  const [step, setStep] = useState<'breathe' | 'chat'>('breathe');
   const [message, setMessage] = useState('');
-  const [advice, setAdvice] = useState<string[]>([]);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Reset state when closing
@@ -20,21 +21,51 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ relationshipId }) => {
       setTimeout(() => {
         setStep('breathe');
         setMessage('');
-        setAdvice([]);
+        setChatHistory([]);
+        setSessionId(null);
         setLoading(false);
       }, 300);
     }
   }, [isOpen]);
 
-  const handleTrigger = async () => {
+  const handleStartChat = async () => {
     setLoading(true);
     try {
-      const response = await triggerSOS(relationshipId, message);
-      setAdvice(response.advice);
-      setStep('advice');
+      const session = await startMediation(relationshipId);
+      setSessionId(session.id);
+      setChatHistory(session.chat_history || [{ role: 'assistant', content: 'Olá. Me conte o que aconteceu...' }]);
+      setStep('chat');
     } catch (error) {
-      setAdvice(['Respire fundo.', 'Tente se afastar da situação por 5 minutos.', 'Aguarde um momento antes de responder.']);
-      setStep('advice');
+      console.error('Error starting mediation:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !sessionId) return;
+    
+    // Optimistic UI
+    const newMessage = { role: 'user', content: message };
+    setChatHistory(prev => [...prev, newMessage]);
+    setMessage('');
+    setLoading(true);
+
+    try {
+      const res = await sendMediationMessage(sessionId, newMessage.content);
+      setChatHistory(res.chatHistory);
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      const errMsg = error.response?.data?.details || error.message || 'Erro ao enviar mensagem.';
+      
+      // Remove o "Pensando..." ou apenas adiciona o erro
+      setChatHistory(prev => [
+        ...prev, 
+        { 
+          role: 'assistant', 
+          content: `Ops! Houve um problema ao processar sua mensagem: ${errMsg}. Por favor, tente novamente em instantes.` 
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -90,70 +121,70 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ relationshipId }) => {
                     <h4 className="text-xl font-bold mb-2">Respire comigo...</h4>
                     <p className="text-muted-foreground mb-6">Inale por 4 segundos, segure, e solte devagar.</p>
                     <button 
-                      className="btn-primary w-full"
-                      onClick={() => setStep('input')}
-                    >
-                      Estou um pouco melhor
-                    </button>
-                  </motion.div>
-                )}
-
-                {step === 'input' && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <p className="mb-4 text-center">O que está acontecendo agora?</p>
-                    <textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Descreva brevemente a situação ou como se sente..."
-                      className="sos-textarea mb-4"
-                      rows={4}
-                    />
-                    <button 
                       className="btn-primary w-full flex items-center justify-center gap-2"
-                      onClick={handleTrigger}
+                      onClick={handleStartChat}
                       disabled={loading}
                     >
                       {loading ? (
                         <div className="loader-small" />
                       ) : (
-                        <>
-                          <Sparkles size={18} />
-                          Pedir Ajuda IA
-                        </>
+                        <>Estou mais calmo, quero conversar</>
                       )}
                     </button>
                   </motion.div>
                 )}
 
-                {step === 'advice' && (
+                {step === 'chat' && (
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
+                    style={{ display: 'flex', flexDirection: 'column', height: '400px' }}
                   >
-                    <h4 className="font-bold mb-4 text-center text-primary">3 Passos para agora:</h4>
-                    <div className="flex flex-col gap-4">
-                      {advice.map((item, index) => (
-                        <motion.div 
-                          key={index}
-                          className="advice-card"
-                          initial={{ x: -20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: index * 0.2 }}
-                        >
-                          <span className="advice-number">{index + 1}</span>
-                          <p>{item}</p>
-                        </motion.div>
+                    <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                      {chatHistory.map((msg, i) => (
+                        <div key={i} style={{ 
+                          alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                          background: msg.role === 'user' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                          padding: '12px 16px',
+                          borderRadius: '16px',
+                          borderBottomRightRadius: msg.role === 'user' ? '4px' : '16px',
+                          borderBottomLeftRadius: msg.role === 'assistant' ? '4px' : '16px',
+                          maxWidth: '85%',
+                          color: msg.role === 'user' ? '#fff' : 'var(--text-light)',
+                          fontSize: '0.95rem',
+                          lineHeight: 1.5,
+                          border: msg.role === 'assistant' ? '1px solid rgba(255,255,255,0.1)' : 'none'
+                        }}>
+                          {msg.content}
+                        </div>
                       ))}
+                      {loading && (
+                        <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '12px 16px', borderRadius: '16px', borderBottomLeftRadius: '4px' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Pensando...</span>
+                        </div>
+                      )}
                     </div>
-                    <button 
-                      className="btn-secondary w-full mt-8"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Vou tentar isso. Obrigado.
-                    </button>
+                    
+                    <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                      <input
+                        type="text"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Digite sua mensagem..."
+                        className="input-field"
+                        style={{ flex: 1 }}
+                        disabled={loading}
+                      />
+                      <button 
+                        className="btn-primary" 
+                        style={{ padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        onClick={handleSendMessage}
+                        disabled={loading || !message.trim()}
+                      >
+                        <Send size={18} />
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </div>

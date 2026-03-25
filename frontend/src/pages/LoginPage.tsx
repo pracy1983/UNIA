@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Calendar, IdCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
+import { formatCPF, validateCPF } from '../utils/validation';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -10,18 +11,37 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value);
+    setCpf(formatted);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    // Validação extra para registro
+    if (!isLogin) {
+      if (!validateCPF(cpf)) {
+        setError('CPF inválido. Verifique os números.');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const payload = isLogin ? { email, password } : { email, password, displayName };
-      const response = await axios.post(endpoint, payload);
+      const endpoint = isLogin ? '/auth/login' : '/auth/register';
+      const payload = isLogin 
+        ? { email, password } 
+        : { email, password, displayName, fullName, cpf, birthDate };
+      const response = await api.post(endpoint, payload);
 
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -37,8 +57,8 @@ const LoginPage = () => {
   return (
     <div className="auth-page">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         className="auth-card"
       >
         <div className="auth-header">
@@ -58,20 +78,58 @@ const LoginPage = () => {
           <AnimatePresence mode="wait">
             {!isLogin && (
               <motion.div
+                key="register-fields"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="input-group"
+                style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}
               >
-                <User size={18} className="input-icon" />
-                <input
-                  type="text"
-                  placeholder="Seu Nome"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="input-field"
-                  required
-                />
+                <div className="input-group">
+                  <User size={18} className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="Seu Nome Real (obrigatório)"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <User size={18} className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="Nome Social / Apelido"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+
+                <div className="input-group">
+                  <IdCard size={18} className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="CPF (obrigatório)"
+                    value={cpf}
+                    onChange={handleCpfChange}
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <Calendar size={18} className="input-icon" />
+                  <input
+                    type="date"
+                    placeholder="Data de Nascimento"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -102,15 +160,17 @@ const LoginPage = () => {
 
           {error && (
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
               className="error-message"
+              style={{ color: '#ff3b30' }}
             >
               {error}
             </motion.p>
           )}
 
           <button
+            type="submit"
             className="btn-primary btn-full"
             disabled={loading}
           >

@@ -3,7 +3,7 @@ import { query } from '../config/database.js';
 import { AuthRequest } from '../middlewares/auth.js';
 
 export const createRelationship = async (req: AuthRequest, res: Response) => {
-    const { type, partnerName } = req.body;
+    const { type, partnerName, startedAt } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -17,10 +17,10 @@ export const createRelationship = async (req: AuthRequest, res: Response) => {
     try {
         // 1. Criar o relacionamento
         const relResult = await query(
-            `INSERT INTO relationships (type, status, level, xp, settings, title)
-       VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO relationships (type, status, level, xp, settings, title, started_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-            [type, 'active', 1, 0, '{}', partnerName || 'Novo Relacionamento']
+            [type, 'active', 1, 0, '{}', partnerName || 'Novo Relacionamento', startedAt || new Date()]
         );
 
         const relationship = relResult.rows[0];
@@ -107,7 +107,23 @@ export const getRelationshipById = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Relationship not found' });
         }
 
-        res.json(result.rows[0]);
+        const relationship = result.rows[0];
+
+        // Buscar partner node para pegar a foto (node diferente do owner da conexão, ou apenas outro membro)
+        const partnerNodeQuery = await query(
+            `SELECT n.id, n.name, n.photo_url, n.owner_id 
+             FROM nodes n
+             JOIN relationship_members rm ON n.id = rm.node_id
+             WHERE rm.relationship_id = $1 AND n.owner_id != $2
+             LIMIT 1`,
+            [id, userId]
+        );
+
+        if (partnerNodeQuery.rowCount && partnerNodeQuery.rowCount > 0) {
+            relationship.partner_node = partnerNodeQuery.rows[0];
+        }
+
+        res.json(relationship);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -125,13 +141,16 @@ export const updateRelationship = async (req: AuthRequest, res: Response) => {
 
     try {
         const checkResult = await query(
-            'SELECT id FROM relationships WHERE id = $1',
+            'SELECT type, status, started_at FROM relationships WHERE id = $1',
             [id]
         );
 
         if (!checkResult.rowCount || checkResult.rowCount === 0) {
             return res.status(404).json({ message: 'Relationship not found' });
         }
+
+        const oldRel = checkResult.rows[0];
+        const { changeDate } = req.body; // Opcional: data da mudança fornecida pelo frontend
 
         const result = await query(
             `UPDATE relationships 
@@ -141,8 +160,9 @@ export const updateRelationship = async (req: AuthRequest, res: Response) => {
            level = COALESCE($4, level),
            xp = COALESCE($5, xp),
            settings = COALESCE($6, settings),
+           started_at = COALESCE($7, started_at),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $8
        RETURNING *`,
             [
                 title,
@@ -151,11 +171,22 @@ export const updateRelationship = async (req: AuthRequest, res: Response) => {
                 level,
                 xp,
                 settings ? JSON.stringify(settings) : null,
+                req.body.startedAt,
                 id
             ]
         );
 
-        res.json(result.rows[0]);
+        const newRel = result.rows[0];
+
+        // Se o TIPO ou STATUS mudou, registrar no histórico
+        if (type && type !== oldRel.type) {
+            await query(
+                'INSERT INTO relationship_history (relationship_id, old_type, new_type, change_date) VALUES ($1, $2, $3, $4)',
+                [id, oldRel.type, type, changeDate || new Date()]
+            );
+        }
+
+        res.json(newRel);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -181,6 +212,95 @@ export const deleteRelationship = async (req: AuthRequest, res: Response) => {
         }
 
         res.json({ message: 'Relationship deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+export const archiveRelationship = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+        const result = await query(
+            'UPDATE relationships SET is_archived = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        if (!result.rowCount || result.rowCount === 0) {
+            return res.status(404).json({ message: 'Relationship not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const getRelationshipByInvite = async (req: AuthRequest, res: Response) => {
+    const { token } = req.params;
+
+    try {
+        const result = await query(
+            'SELECT * FROM relationships WHERE invite_token = $1',
+            [token]
+        );
+
+        if (!result.rowCount || result.rowCount === 0) {
+            return res.status(404).json({ message: 'Invite not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const acceptRelationshipInvite = async (req: AuthRequest, res: Response) => {
+    const { token } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+        const relResult = await query(
+            'SELECT id FROM relationships WHERE invite_token = $1',
+            [token]
+        );
+
+        if (!relResult.rowCount || relResult.rowCount === 0) {
+            return res.status(404).json({ message: 'Invite not found' });
+        }
+
+        const relationshipId = relResult.rows[0].id;
+
+        // Buscar node do usuário
+        let nodeResult = await query(
+            'SELECT id FROM nodes WHERE owner_id = $1 AND type = $2 LIMIT 1',
+            [userId, 'solo']
+        );
+
+        if (nodeResult.rows.length === 0) {
+            return res.status(400).json({ message: 'User node not found. Complete onboarding first.' });
+        }
+
+        const userNodeId = nodeResult.rows[0].id;
+
+        // Vincular usuário como member
+        await query(
+            'INSERT INTO relationship_members (relationship_id, node_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+            [relationshipId, userNodeId, 'member']
+        );
+
+        res.json({ message: 'Invite accepted successfully', relationshipId });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

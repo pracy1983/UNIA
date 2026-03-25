@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ArrowRight, CheckCircle2, ChevronLeft, Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 
 interface Question {
   id: string;
@@ -24,9 +24,7 @@ const OnboardingPage = () => {
     const fetchQuestions = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/onboarding/questions', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/onboarding/questions');
         setQuestions(response.data);
       } catch (err) {
         console.error('Erro ao buscar perguntas:', err);
@@ -47,11 +45,9 @@ const OnboardingPage = () => {
       const token = localStorage.getItem('token');
       const question = questions[currentIndex];
       
-      await axios.post('/api/onboarding/answer', {
+      await api.post('/onboarding/answer', {
         questionId: question.id,
         answerContent: answer
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (currentIndex < questions.length - 1) {

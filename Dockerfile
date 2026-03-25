@@ -27,6 +27,7 @@ ENV NODE_ENV=production
 
 # Copy built backend
 COPY --from=backend-builder /app/backend/dist ./dist
+COPY --from=backend-builder /app/backend/*.sql ./
 COPY --from=backend-builder /app/backend/package*.json ./
 RUN npm install --omit=dev
 

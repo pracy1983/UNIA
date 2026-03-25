@@ -1,30 +1,59 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const database_js_1 = require("./config/database.js");
-const authRoutes_js_1 = __importDefault(require("./routes/authRoutes.js"));
-dotenv_1.default.config();
-const app = (0, express_1.default)();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+import { query } from './config/database.js';
+import authRoutes from './routes/authRoutes.js';
+import onboardingRoutes from './routes/onboardingRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import relationshipsRoutes from './routes/relationshipsRoutes.js';
+import pillRoutes from './routes/pillRoutes.js';
+import memoryRoutes from './routes/memoryRoutes.js';
+import sosRoutes from './routes/sosRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import personalityRoutes from './routes/personalityRoutes.js';
+import { syncDatabase } from './config/syncDatabase.js';
+dotenv.config();
+// @ts-ignore
+const __dirname = path.resolve();
+const app = express();
 const PORT = process.env.PORT || 3000;
-app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Routes
-app.use('/api/auth', authRoutes_js_1.default);
+app.use('/api/auth', authRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/relationships', relationshipsRoutes);
+app.use('/api/pills', pillRoutes);
+app.use('/api/memories', memoryRoutes);
+app.use('/api/sos', sosRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/personality', personalityRoutes);
 // Healthcheck
 app.get('/health', async (req, res) => {
     try {
-        await (0, database_js_1.query)('SELECT 1');
+        await query('SELECT 1');
         res.status(200).json({ status: 'OK', database: 'connected' });
     }
-    catch (err) {
-        res.status(500).json({ status: 'ERROR', database: 'disconnected' });
+    catch (error) {
+        res.status(500).json({ status: 'Error', database: 'disconnected' });
     }
 });
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+if (process.env.NODE_ENV === 'production') {
+    const publicPath = path.join(__dirname, 'dist', 'public');
+    app.use(express.static(publicPath));
+    app.get('*all', (req, res) => {
+        res.sendFile(path.join(publicPath, 'index.html'));
+    });
+}
+app.listen(PORT, async () => {
+    console.log(`Server running on port ${PORT}`);
+    // Executa migrações no startup
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+        await syncDatabase();
+    }
 });

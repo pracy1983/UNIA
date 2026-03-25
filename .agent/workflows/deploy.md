@@ -99,6 +99,7 @@ Before any deployment:
 └─────────────────┘
 ```
 
+<<<<<<< HEAD
 ---
 
 ## Output Format
@@ -127,6 +128,11 @@ Before any deployment:
 ✅ API responding (200 OK)
 ✅ Database connected
 ✅ All services healthy
+=======
+4. Verificar o healthcheck em produção (aguardar ~2-3 min para o build)
+```
+https://unia.vrdrcy.easypanel.host/health
+>>>>>>> cf3cb44ff75fa315a6c1981c76a4f034f1e627c5
 ```
 
 ### Failed Deploy

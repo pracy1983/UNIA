@@ -7,59 +7,143 @@ import { deepseekService } from '../services/deepseekService.js';
  * Trigger an SOS Event.
  * Provides immediate AI-guided emotional first aid.
  */
-export const triggerSOS = async (req: AuthRequest, res: Response) => {
-  const { relationshipId, message } = req.body;
-  const userId = req.user?.id;
+export const startMediation = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const { relationshipId } = req.body;
 
-  if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
-  try {
-    // 1. Get some context about the relationship (optional but better)
-    let contextStr = "Conflito não especificado.";
-    if (relationshipId) {
-       const relInfo = await query('SELECT title, type FROM relationships WHERE id = $1', [relationshipId]);
-       if (relInfo.rowCount && relInfo.rowCount > 0) {
-         contextStr = `Relacionamento: ${relInfo.rows[0].title} (${relInfo.rows[0].type})`;
-       }
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // 2. Call DeepSeek for Emergency Mediation
-    const prompt = `
-      EMERGÊNCIA EMOCIONAL: O usuário clicou no botão SOS da UNIA.
-      Contexto: ${contextStr}
-      Mensagem do Usuário: "${message || 'Sem detalhes, apenas em crise.'}"
+    try {
+        const initialMessage = {
+            role: 'assistant',
+            content: 'Olá. Me conte o que aconteceu...'
+        };
 
-      OBJETIVO: Fornecer 3 passos imediatos e práticos para acalmar os ânimos e evitar ações impulsivas.
-      REGRAS:
-      - Seja acolhedor mas firme na segurança.
-      - Não peça para falar agora se os ânimos estão quentes.
-      - Sugira pausa, respiração ou distanciamento temporário.
-      
-      RETORNO: Envie EXATAMENTE 3 frases curtas, separadas por quebra de linha.
-    `;
+        const result = await query(
+            'INSERT INTO sos_sessions (user_id, relationship_id, advice_received, chat_history) VALUES ($1, $2, $3, $4) RETURNING *',
+            [userId, relationshipId || null, '[]', JSON.stringify([initialMessage])]
+        );
 
-    const aiResponse = await deepseekService.chat([
-      { role: 'system', content: 'Você é o mediador de emergência da UNIA. Foco em desescalar conflitos.' },
-      { role: 'user', content: prompt }
-    ]);
-
-    const advice = aiResponse.content.split('\n').filter((l: string) => l.trim().length > 0).slice(0, 3);
-
-    // 3. Save session
-    const result = await query(
-      'INSERT INTO sos_sessions (user_id, relationship_id, advice_received) VALUES ($1, $2, $3) RETURNING *',
-      [userId, relationshipId || null, JSON.stringify(advice)]
-    );
-
-    res.status(201).json({
-      session: result.rows[0],
-      advice
-    });
-
-  } catch (err) {
-    console.error('Error triggering SOS:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error starting SOS mediation:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
+
+export const sendMediationMessage = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const { sessionId } = req.params;
+    const { message } = req.body;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+        // Obter Sessão e Histórico
+        const sessionRes = await query(
+            'SELECT * FROM sos_sessions WHERE id = $1 AND user_id = $2',
+            [sessionId, userId]
+        );
+
+        if (!sessionRes.rowCount || sessionRes.rowCount === 0) {
+            return res.status(404).json({ message: 'Sessão não encontrada' });
+        }
+
+        const session = sessionRes.rows[0];
+        
+        // Garantir que chatHistory seja um array (tratando se vier como string do DB)
+        let chatHistory = session.chat_history;
+        if (typeof chatHistory === 'string') {
+            try {
+                chatHistory = JSON.parse(chatHistory);
+            } catch (e) {
+                chatHistory = [];
+            }
+        }
+        if (!Array.isArray(chatHistory)) {
+            chatHistory = [];
+        }
+
+        // Adicionar a mensagem do usuário
+        chatHistory.push({ role: 'user', content: message });
+
+        // Montar Contexto posterior
+        let contextStr = "Contexto: O usuário está precisando de mediação ou conselho.";
+        
+        try {
+            // Contexto de Personalidade
+            const discovRes = await query(
+                `    SELECT q.question_text, a.answer_content
+                     FROM personality_answers a
+                     JOIN personality_questions q ON a.question_id = q.id
+                     WHERE a.user_id = $1`,
+                [userId]
+            );
+            if (discovRes.rowCount && discovRes.rowCount > 0) {
+                contextStr += "\n\nPerfil Psicológico do Usuário:";
+                discovRes.rows.forEach(r => {
+                    contextStr += `\n- Pergunta: "${r.question_text}" | Resposta: "${r.answer_content}"`;
+                });
+            }
+
+            // Contexto de Relacionamento
+            if (session.relationship_id) {
+                const relRes = await query('SELECT title, type FROM relationships WHERE id = $1', [session.relationship_id]);
+                if (relRes.rowCount && relRes.rowCount > 0) {
+                    contextStr += `\n\nRelacionamento Atual em Foco: ${relRes.rows[0].title} (${relRes.rows[0].type})`;
+                }
+            }
+        } catch (ctxErr) {
+            console.warn('Error fetching context for mediation, proceeding without it:', ctxErr);
+        }
+
+        const systemPrompt = `
+Você é o mediador e terapeuta de relacionamentos hiper-experiente da UNIA.
+Sua missão principal é ajudar a pacificar a situação, oferecer perspectiva madura e promover o diálogo construtivo.
+
+Regras de Ouro:
+1. Entenda as emoções do usuário, seja extremamente acolhedor e seguro.
+2. Ajude a baixar a guarda e buscar soluções lógicas, nunca incentivando o ataque mútuo.
+3. Leve o usuário a reflexões justas e coerentes fazendo perguntas estratégicas, uma de cada vez.
+4. Use o "Perfil Psicológico do Usuário" (quando disponível) para entender de onde as dores estão vindo e aconselhar de maneira personalizada.
+5. Respostas devem ser curtas, muito naturais e parecidas com chat online, NADA de respostas mecânicas.
+
+${contextStr}
+        `;
+
+        const messagesToSend = [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory
+        ];
+
+        // Chamar IA
+        const aiResponse = await deepseekService.chat(messagesToSend);
+
+        // Adicionar resposta da IA ao histórico
+        chatHistory.push({ role: 'assistant', content: aiResponse.content });
+
+        // Atualizar DB
+        await query(
+            'UPDATE sos_sessions SET chat_history = $1 WHERE id = $2',
+            [JSON.stringify(chatHistory), sessionId]
+        );
+
+        res.json({
+            session: sessionRes.rows[0],
+            response: aiResponse.content,
+            chatHistory
+        });
+    } catch (err: any) {
+        console.error('Error sending mediation message:', err.message || err);
+        const errorDetail = err.response?.data?.error?.message || err.message || 'Erro desconhecido';
+        res.status(500).json({ 
+            message: 'Erro ao processar mediação.',
+            details: errorDetail
+        });
+    }
+};
+

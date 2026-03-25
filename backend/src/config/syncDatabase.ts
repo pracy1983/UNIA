@@ -17,7 +17,8 @@ export const syncDatabase = async () => {
         'migration.sql',
         'feature_migration.sql',
         'update_types.sql',
-        'phase3_migration.sql'
+        'phase3_migration.sql',
+        'seed_questions.sql'
     ];
 
     const client = await pool.connect();

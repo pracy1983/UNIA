@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { query } from '../config/database.js';
 import { AuthRequest } from '../middlewares/auth.js';
-import { deepseekService } from '../services/deepseekService.js';
+import { aiService } from '../services/aiService.js';
 
 /**
  * Trigger an SOS Event.
@@ -121,7 +121,7 @@ ${contextStr}
         ];
 
         // Chamar IA
-        const aiResponse = await deepseekService.chat(messagesToSend);
+        const aiResponse = await aiService.chat(messagesToSend);
 
         // Adicionar resposta da IA ao histórico
         chatHistory.push({ role: 'assistant', content: aiResponse.content });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Loader2 } from 'lucide-react';
-import { savePill, getLatestPill } from '../../services/api';
+import { Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { savePill, getLatestPill, getInsight } from '../../services/api';
 
 const MOOD_MAP: Record<string, string> = {
   Excelente: 'excellent',
@@ -101,8 +101,28 @@ export const PillWidget = () => {
   );
 };
 
-// AlertWidget: mostra dados relevantes quando existirem relacionamentos
+// AlertWidget: Deep Insight gerado por IA (OmniRoute) a partir do humor e memórias
 export const AlertWidget = ({ relationshipsCount = 0 }: { relationshipsCount?: number }) => {
+  const [insight, setInsight] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  const loadInsight = async () => {
+    setLoading(true);
+    try {
+      const data = await getInsight();
+      setInsight(data.insight);
+    } catch {
+      setInsight('Não consegui gerar seu insight agora. Tente novamente em instantes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInsight();
+    // recarrega quando o número de relacionamentos muda
+  }, [relationshipsCount]);
+
   return (
     <motion.div
       className="alert-widget"
@@ -114,25 +134,19 @@ export const AlertWidget = ({ relationshipsCount = 0 }: { relationshipsCount?: n
         <Sparkles size={36} />
       </div>
 
-      {relationshipsCount > 0 ? (
-        <>
-          <h3>Alerta UNIA: Conexões Ativas!</h3>
-          <p>
-            Você tem {relationshipsCount} relacionamento{relationshipsCount > 1 ? 's' : ''} ativo{relationshipsCount > 1 ? 's' : ''}.
-            Continue cultivando suas conexões.
-          </p>
-        </>
+      <h3>Insight da UNIA</h3>
+
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px' }}>
+          <Loader2 size={20} style={{ opacity: 0.5, animation: 'spin 1s linear infinite' }} />
+        </div>
       ) : (
-        <>
-          <h3>Alerta UNIA: Previsão de Conexão Profunda!</h3>
-          <p>
-            Cadastre seus relacionamentos para receber alertas personalizados de IA.
-          </p>
-        </>
+        <p>{insight}</p>
       )}
 
-      <button className="alert-btn">
-        Ver Detalhes
+      <button className="alert-btn" onClick={loadInsight} disabled={loading}>
+        <RefreshCw size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+        Atualizar insight
       </button>
     </motion.div>
   );

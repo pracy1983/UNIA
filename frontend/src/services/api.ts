@@ -111,6 +111,18 @@ export const getRelationships = async (): Promise<Relationship[]> => {
     return Array.isArray(response.data) ? response.data : [];
 };
 
+// ─── Deep Insight (IA) ────────────────────────────────────────────────────────
+export interface DashboardInsight {
+    insight: string;
+    hasData: boolean;
+    error?: boolean;
+}
+
+export const getInsight = async (): Promise<DashboardInsight> => {
+    const response = await api.get('/dashboard/insight');
+    return response.data;
+};
+
 export const getRelationshipById = async (id: string): Promise<Relationship> => {
     const response = await api.get(`/relationships/${id}`);
     return response.data;

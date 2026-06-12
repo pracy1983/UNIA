@@ -9,11 +9,12 @@ Criar o "Copiloto Definitivo de Relacionamentos" com foco em organização, mem�
 - **Sync Engine**: Sincronização de calendários e ciclos biológicos.
 
 ## 🚀 Roadmap MVP
-1. Ontoarding + Perfil (Dossiê).
+1. Onboarding + Perfil (Dossiê).
 2. Criação de Relações (Solo/Conectado).
 3. Linha do Tempo de Memórias.
 4. Botão SOS (Mediação Básica).
 5. **UI Revamp**: Implementar layout Dashboard Premium conforme design (glassmorphism, background espacial).
+6. **Auth via WhatsApp** ✅: Cadastro e login por código OTP no WhatsApp (Evolution API). E-mail é coletado no cadastro (obrigatório), mas a autenticação é toda via WhatsApp. Rotas: `POST /api/auth/whatsapp/request-code` e `POST /api/auth/whatsapp/verify`.
 
 ## 🎨 Design & UI (Fase Atual)
 - **Background**: Uso de `bg-desktop.png` e `bg-mobile.jpg`.

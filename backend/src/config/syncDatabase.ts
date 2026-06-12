@@ -18,6 +18,7 @@ export const syncDatabase = async () => {
         'feature_migration.sql',
         'update_types.sql',
         'phase3_migration.sql',
+        'whatsapp_migration.sql',
         'seed_questions.sql'
     ];
 

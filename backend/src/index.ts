@@ -60,6 +60,10 @@ if (process.env.NODE_ENV === 'production') {
 
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+
+  if (!process.env.JWT_SECRET) {
+    console.error('⚠️ CRITICAL: JWT_SECRET não definido — tokens estão sendo assinados com segredo inseguro. Configure JWT_SECRET no Easypanel.');
+  }
   
   // Executa migrações no startup
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {

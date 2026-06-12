@@ -2,7 +2,7 @@
 
 ## 🎯 Princípios de Design
 1. **Estética Premium**: Interface moderna, vibrante, com micro-animações e foco em UX emocional.
-2. **Privacidade": Processamento efêmero para dados sensíveis (conflitos).
+2. **Privacidade**: Processamento efêmero para dados sensíveis (conflitos).
 3. **Escalabilidade**: Arquitetura baseada em "Nós" para múltiplos tipos de relações.
 
 ## 🛠️ Tecnologias

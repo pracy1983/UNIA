@@ -33,6 +33,24 @@ export function validateCPF(cpf: string): boolean {
 }
 
 /**
+ * Formata um telefone brasileiro ((00) 00000-0000)
+ */
+export function formatPhone(value: string): string {
+  const clean = value.replace(/[^\d]/g, '').slice(0, 11);
+  return clean
+    .replace(/(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{5})(\d)/, '$1-$2');
+}
+
+/**
+ * Valida telefone brasileiro com DDD (10 ou 11 dígitos)
+ */
+export function validatePhone(value: string): boolean {
+  const clean = value.replace(/[^\d]/g, '');
+  return clean.length === 10 || clean.length === 11;
+}
+
+/**
  * Formata um CPF (000.000.000-00)
  */
 export function formatCPF(value: string): string {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Home, Calendar, Link as LinkIcon, Orbit, Settings, Search as SearchIcon, Bell, Plus, X
+  Home, Calendar, Link as LinkIcon, Orbit, Settings, Search as SearchIcon, Plus, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -8,8 +8,8 @@ import { motion } from 'framer-motion';
 import RelationshipCard from '../components/dashboard/RelationshipCard';
 import { PillWidget, AlertWidget } from '../components/dashboard/DashboardWidgets';
 import { SOSButton } from '../components/dashboard/SOSButton';
-import { createRelationship, getRelationships, getProfile, CreateRelationshipData, Profile, WishlistItem, getPersonalWishlist, addWishlistItem, deleteWishlistItem, PersonalityQuestion, getUnansweredQuestions, submitPersonalityAnswer, getDiscoveries, PersonalityDiscovery } from '../services/api';
-import { LogOut, User, Gift, Trash2, ChevronRight, Sparkles } from 'lucide-react';
+import { createRelationship, getRelationships, getProfile, CreateRelationshipData, Profile, WishlistItem, getPersonalWishlist, addWishlistItem, deleteWishlistItem, PersonalityQuestion, getUnansweredQuestions, submitPersonalityAnswer, getDiscoveries, PersonalityDiscovery, getConnections, getCalendar, updateSettings, deleteAccount, Connection, CalendarEvent } from '../services/api';
+import { LogOut, User, Gift, Trash2, ChevronRight, Sparkles, MessageCircle, Mail, Archive, CalendarHeart, Bell as BellIcon, AlertTriangle } from 'lucide-react';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getUserData() {
@@ -170,10 +170,66 @@ const Dashboard = () => {
     }
   };
 
+  // ─── Conexões / Calendário / Configurações ───
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [loadingConnections, setLoadingConnections] = useState(false);
+  const [calendar, setCalendar] = useState<{ upcoming: CalendarEvent[]; past: CalendarEvent[] }>({ upcoming: [], past: [] });
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
+  const [notifyWhatsapp, setNotifyWhatsapp] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+
   useEffect(() => {
     fetchData();
     fetchPersonalityQuestions();
   }, []);
+
+  // Sincroniza o toggle de notificação quando o perfil carrega
+  useEffect(() => {
+    if (profile?.settings && typeof profile.settings.notify_whatsapp === 'boolean') {
+      setNotifyWhatsapp(profile.settings.notify_whatsapp);
+    }
+  }, [profile]);
+
+  // Carrega dados sob demanda ao abrir cada aba
+  useEffect(() => {
+    if (activeTab === 'Conexões' && connections.length === 0) {
+      setLoadingConnections(true);
+      getConnections().then(setConnections).catch(() => {}).finally(() => setLoadingConnections(false));
+    }
+    if (activeTab === 'Calendário' && calendar.upcoming.length === 0 && calendar.past.length === 0) {
+      setLoadingCalendar(true);
+      getCalendar().then(setCalendar).catch(() => {}).finally(() => setLoadingCalendar(false));
+    }
+  }, [activeTab]);
+
+  const handleToggleNotify = async () => {
+    const next = !notifyWhatsapp;
+    setNotifyWhatsapp(next);
+    setSavingSettings(true);
+    try {
+      await updateSettings({ notify_whatsapp: next });
+    } catch {
+      setNotifyWhatsapp(!next); // reverte em caso de erro
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Tem certeza? Sua conta e TODOS os seus dados (relacionamentos, memórias, perfil) serão apagados permanentemente. Esta ação é irreversível.')) return;
+    try {
+      await deleteAccount();
+      localStorage.clear();
+      navigate('/login');
+    } catch {
+      alert('Erro ao excluir conta. Tente novamente.');
+    }
+  };
+
+  const formatEventDate = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -304,6 +360,170 @@ const Dashboard = () => {
                </div>
              )}
            </motion.div>
+        ) : activeTab === 'Conexões' ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '0 24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', marginTop: '12px' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700 }}>Minhas Conexões</h2>
+              <button onClick={() => setShowModal(true)} className="btn-add-glass">
+                <Plus size={16} /> Nova Conexão
+              </button>
+            </div>
+
+            {loadingConnections ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+                <div className="loader-small" />
+              </div>
+            ) : connections.length === 0 ? (
+              <div className="empty-state-premium">
+                <h3>Nenhuma conexão ainda</h3>
+                <p>Aqui ficam todos os seus relacionamentos — ativos e arquivados. Comece criando o primeiro.</p>
+                <button onClick={() => setShowModal(true)} className="btn-primary-glow"><Plus size={18} /> Criar Conexão</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {connections.map((c) => (
+                  <div
+                    key={c.id}
+                    onClick={() => navigate(`/relationship/${c.id}`)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(15, 18, 35, 0.65)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px 20px', cursor: 'pointer', opacity: c.is_archived ? 0.6 : 1 }}
+                  >
+                    <div className="user-avatar" style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card-bg)', borderRadius: '50%', flexShrink: 0 }}>
+                      {c.partner_node?.photo_url ? (
+                        <img src={c.partner_node.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ) : (
+                        <User size={22} color="var(--text-muted)" />
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ fontSize: '1.05rem', marginBottom: '2px' }}>{c.title}</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'capitalize' }}>{c.type} · Nível {c.level}</p>
+                    </div>
+                    {c.is_archived ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}><Archive size={13} /> Arquivado</span>
+                    ) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: '#34c759' }}>● Ativo</span>
+                    )}
+                    <ChevronRight size={18} color="rgba(255,255,255,0.3)" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        ) : activeTab === 'Calendário' ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '0 24px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '24px', marginTop: '12px' }}>Calendário</h2>
+
+            {loadingCalendar ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="loader-small" /></div>
+            ) : calendar.upcoming.length === 0 && calendar.past.length === 0 ? (
+              <div className="empty-state-premium">
+                <h3>Sem datas ainda</h3>
+                <p>Quando você definir a data de início de um relacionamento ou registrar memórias, os aniversários e momentos aparecerão aqui.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                {calendar.upcoming.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '14px' }}>Próximos</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {calendar.upcoming.map((e, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(15, 18, 35, 0.65)', border: '1px solid rgba(255, 126, 95, 0.25)', borderRadius: '14px', padding: '14px 18px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 52, height: 52, borderRadius: '12px', background: 'rgba(255,126,95,0.1)', color: '#FF7E5F', flexShrink: 0 }}>
+                            {e.type === 'anniversary' ? <CalendarHeart size={20} /> : <Sparkles size={20} />}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ fontSize: '1rem' }}>{e.title}</h4>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{e.subtitle}</p>
+                          </div>
+                          <span style={{ fontWeight: 600, color: '#FF7E5F', fontSize: '0.9rem', textTransform: 'capitalize' }}>{formatEventDate(e.date)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {calendar.past.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '14px' }}>Histórico</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {calendar.past.map((e, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(15, 18, 35, 0.45)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '14px 18px', opacity: 0.75 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52, borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', flexShrink: 0 }}>
+                            {e.type === 'anniversary' ? <CalendarHeart size={20} /> : <Sparkles size={20} />}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ fontSize: '1rem' }}>{e.title}</h4>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{e.subtitle}</p>
+                          </div>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'capitalize' }}>{formatEventDate(e.date)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        ) : activeTab === 'Configurações' ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '0 24px', maxWidth: 640 }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '24px', marginTop: '12px' }}>Configurações</h2>
+
+            {/* Conta */}
+            <div style={{ background: 'rgba(15, 18, 35, 0.65)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '16px' }}>Conta</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', color: 'var(--text-muted)' }}>
+                <MessageCircle size={18} color="#25D366" />
+                <span style={{ flex: 1 }}>{profile?.phone || '—'}</span>
+                {profile?.whatsapp_verified && <span style={{ fontSize: '0.75rem', color: '#34c759' }}>✓ verificado</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)' }}>
+                <Mail size={18} />
+                <span>{profile?.email || '—'}</span>
+              </div>
+              <button onClick={() => navigate('/profile')} className="btn-add-glass" style={{ marginTop: '18px' }}>
+                <User size={16} /> Editar perfil
+              </button>
+            </div>
+
+            {/* Notificações */}
+            <div style={{ background: 'rgba(15, 18, 35, 0.65)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '16px' }}>Notificações</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <BellIcon size={18} color="var(--text-muted)" />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '0.95rem' }}>Lembretes pelo WhatsApp</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Aniversários, datas e a pílula do dia.</p>
+                </div>
+                <button
+                  onClick={handleToggleNotify}
+                  disabled={savingSettings}
+                  style={{
+                    width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', position: 'relative',
+                    background: notifyWhatsapp ? '#34c759' : 'rgba(255,255,255,0.15)', transition: 'background 0.2s'
+                  }}
+                  aria-label="Alternar notificações"
+                >
+                  <span style={{ position: 'absolute', top: 3, left: notifyWhatsapp ? 23 : 3, width: 22, height: 22, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                </button>
+              </div>
+            </div>
+
+            {/* Zona de perigo */}
+            <div style={{ background: 'rgba(35, 15, 15, 0.55)', border: '1px solid rgba(255, 59, 48, 0.3)', borderRadius: '16px', padding: '20px' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '8px', color: '#ff453a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle size={18} /> Zona de perigo
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                Excluir sua conta apaga permanentemente todos os seus dados. Não há como desfazer.
+              </p>
+              <button
+                onClick={handleDeleteAccount}
+                style={{ background: 'rgba(255, 59, 48, 0.12)', color: '#ff453a', border: '1px solid rgba(255, 59, 48, 0.4)', borderRadius: '12px', padding: '10px 18px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 }}
+              >
+                <Trash2 size={16} /> Excluir minha conta
+              </button>
+            </div>
+          </motion.div>
         ) : activeTab !== 'Início' ? (
           <div className="coming-soon">
             <h1>Em Breve</h1>

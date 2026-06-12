@@ -65,6 +65,31 @@ export interface Profile {
     cpf?: string;
     birth_date?: string;
     photo_url?: string;
+    phone?: string;
+    whatsapp_verified?: boolean;
+    settings?: Record<string, any>;
+}
+
+export interface Connection {
+    id: string;
+    title: string;
+    type: string;
+    status: string;
+    level: number;
+    xp: number;
+    started_at?: string;
+    is_archived: boolean;
+    percentage: number;
+    progressValue: number;
+    partner_node?: { name: string; photo_url?: string } | null;
+}
+
+export interface CalendarEvent {
+    type: 'anniversary' | 'memory';
+    date: string;
+    title: string;
+    subtitle: string;
+    relationshipId?: string;
 }
 
 export interface Pill {
@@ -121,6 +146,28 @@ export interface DashboardInsight {
 export const getInsight = async (): Promise<DashboardInsight> => {
     const response = await api.get('/dashboard/insight');
     return response.data;
+};
+
+// ─── Conexões ─────────────────────────────────────────────────────────────────
+export const getConnections = async (): Promise<Connection[]> => {
+    const response = await api.get('/dashboard/connections');
+    return Array.isArray(response.data) ? response.data : [];
+};
+
+// ─── Calendário ───────────────────────────────────────────────────────────────
+export const getCalendar = async (): Promise<{ upcoming: CalendarEvent[]; past: CalendarEvent[] }> => {
+    const response = await api.get('/dashboard/calendar');
+    return response.data || { upcoming: [], past: [] };
+};
+
+// ─── Configurações ────────────────────────────────────────────────────────────
+export const updateSettings = async (settings: Record<string, any>): Promise<{ settings: Record<string, any> }> => {
+    const response = await api.patch('/profile/settings', { settings });
+    return response.data;
+};
+
+export const deleteAccount = async (): Promise<void> => {
+    await api.delete('/profile');
 };
 
 export const getRelationshipById = async (id: string): Promise<Relationship> => {
@@ -187,16 +234,6 @@ export const createMemory = async (data: {
     tags?: string[];
 }): Promise<Memory> => {
     const response = await api.post('/memories', data);
-    return response.data;
-};
-
-export interface SOSResponse {
-    session: any;
-    advice: string[];
-}
-
-export const triggerSOS = async (relationshipId?: string, message?: string): Promise<SOSResponse> => {
-    const response = await api.post('/sos', { relationshipId, message });
     return response.data;
 };
 

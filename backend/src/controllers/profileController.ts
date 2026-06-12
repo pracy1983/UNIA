@@ -11,7 +11,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     try {
         const result = await query(
-            'SELECT id, email, display_name, full_name, cpf, birth_date, photo_url FROM users WHERE id = $1',
+            'SELECT id, email, display_name, full_name, cpf, birth_date, photo_url, phone, whatsapp_verified, settings FROM users WHERE id = $1',
             [userId]
         );
 
@@ -84,5 +84,59 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
              return res.status(400).json({ message: 'CPF ou E-mail já em uso por outro usuário.' });
         }
         res.status(500).json({ message: 'Erro interno ao atualizar perfil.' });
+    }
+};
+
+/**
+ * Atualiza preferências do usuário (ex: notificações por WhatsApp).
+ * Faz merge no JSONB `settings` para não sobrescrever outras chaves.
+ */
+export const updateSettings = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const { settings } = req.body;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    if (!settings || typeof settings !== 'object') {
+        return res.status(400).json({ message: 'Campo "settings" (objeto) é obrigatório.' });
+    }
+
+    try {
+        const result = await query(
+            `UPDATE users
+             SET settings = COALESCE(settings, '{}'::jsonb) || $1::jsonb,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2
+             RETURNING settings`,
+            [JSON.stringify(settings), userId]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error updating settings:', err);
+        res.status(500).json({ message: 'Erro interno ao salvar preferências.' });
+    }
+};
+
+/**
+ * Exclui permanentemente a conta do usuário. O ON DELETE CASCADE nas tabelas
+ * remove nodes, relações, memórias, pílulas etc.
+ */
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+        const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [userId]);
+        if (!result.rowCount) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+        res.json({ message: 'Conta excluída com sucesso.' });
+    } catch (err) {
+        console.error('Error deleting account:', err);
+        res.status(500).json({ message: 'Erro interno ao excluir conta.' });
     }
 };

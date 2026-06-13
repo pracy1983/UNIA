@@ -13,7 +13,9 @@ import sosRoutes from './routes/sosRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import personalityRoutes from './routes/personalityRoutes.js';
+import cronRoutes from './routes/cronRoutes.js';
 import { syncDatabase } from './config/syncDatabase.js';
+import { startReminderCron } from './cron/reminderCron.js';
 
 dotenv.config();
 
@@ -38,6 +40,7 @@ app.use('/api/sos', sosRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/personality', personalityRoutes);
+app.use('/api/cron', cronRoutes);
 
 // Healthcheck
 app.get('/health', async (req, res) => {
@@ -69,4 +72,7 @@ app.listen(PORT, async () => {
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
       await syncDatabase();
   }
+
+  // Agenda lembretes WhatsApp
+  startReminderCron();
 });

@@ -19,6 +19,7 @@ export const syncDatabase = async () => {
         'update_types.sql',
         'phase3_migration.sql',
         'whatsapp_migration.sql',
+        'reminders_migration.sql',
         'seed_questions.sql'
     ];
 
